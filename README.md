@@ -4,7 +4,7 @@ Stockfish rechnet, du lernst: Android-App, die eigene Schachpartien auf dem Hand
 und als Puzzles mit Wiederholung einübt. Ohne eigenen Server und ohne Pflicht-Schlüssel. Abgeleitet vom Telegram-Bot
 [chess-mentor](https://github.com/adubdubdub/chess-mentor).
 
-> **Stand: Phase 0.** Bisher gibt es nur eine Prüf-App: ein Brett, auf dem man zieht, mit Stockfish-Bewertung und dem
+> **Stand: Phase 0 abgeschlossen.** Bisher gibt es nur eine Prüf-App: ein Brett, auf dem man zieht, mit Stockfish-Bewertung und dem
 > besten Zug als Pfeil. Analyse, Besprechung und Puzzles folgen.
 
 ## 🧭 Zielbild
@@ -45,6 +45,7 @@ flutter pub get
 flutter analyze
 flutter test
 tools/build-apk.sh       # baut build/app/outputs/flutter-apk/app-debug.apk
+adb install -r -t build/app/outputs/flutter-apk/app-debug.apk   # -t: Debug-APK ist test-only
 ```
 
 Gebaut wird nur `arm64-v8a` (`android.injected.build.abi` in `android/gradle.properties`).
@@ -58,7 +59,7 @@ Gebaut wird nur `arm64-v8a` (`android.injected.build.abi` in `android/gradle.pro
 
 ## 🗺️ Roadmap
 
-- [ ] **Phase 0:** Werkzeuge, Prüf-App auf dem Gerät
+- [x] **Phase 0:** Werkzeuge, Prüf-App auf dem Gerät (getestet auf Pixel 6, Android 16)
 - [ ] **Phase 1:** PGN-Eingang, Analyse
 - [ ] **Phase 2:** Besprechung am Brett
 - [ ] **Phase 3:** Puzzles mit Wiederholung
