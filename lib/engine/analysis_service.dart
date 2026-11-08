@@ -8,6 +8,7 @@ import 'package:flutter/foundation.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../analysis/analysis.dart';
+import '../analysis/uci.dart';
 import '../data/game_store.dart';
 import '../data/settings.dart';
 import 'mobile_engine.dart';
@@ -45,6 +46,9 @@ class AnalysisService extends ChangeNotifier {
     _engineConfig = config;
     return _engine!;
   }
+
+  /// Engine für Lösungsversuche in der Besprechung; teilt sich die Warteschlange mit laufenden Analysen.
+  Future<UciEngine> engine() => _ensureEngine();
 
   /// Engine freigeben, z. B. vor einer Messung oder einem Netzwechsel.
   Future<void> releaseEngine() async {

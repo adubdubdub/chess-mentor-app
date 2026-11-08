@@ -3,10 +3,12 @@ import 'package:dartchess/dartchess.dart';
 import 'package:flutter/material.dart';
 
 import '../analysis/analysis.dart';
+import '../coach/coach_texts.dart';
 import '../data/game_store.dart';
 import '../engine/analysis_service.dart';
 import 'app_scope.dart';
 import 'home_page.dart' show askColor;
+import 'review_page.dart';
 import 'strings.dart';
 
 const classColors = {
@@ -134,6 +136,16 @@ class _GamePageState extends State<GamePage> {
         SizedBox(
           height: 120,
           child: EvalChart(evals: a.evals, moments: a.moments, color: a.color),
+        ),
+        const SizedBox(height: 12),
+        Text(CoachTexts(tr).summary(a)),
+        const SizedBox(height: 12),
+        FilledButton.icon(
+          onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => ReviewPage(analysis: a))),
+          icon: const Icon(Icons.school),
+          label: Text(
+            a.moments.isEmpty ? tr.t('Abschluss ansehen', 'View wrap-up') : tr.t('Besprechung starten', 'Start review'),
+          ),
         ),
         const SizedBox(height: 16),
         Text(tr.keyMoments, style: theme.textTheme.titleMedium),
