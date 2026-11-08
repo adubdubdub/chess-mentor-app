@@ -290,12 +290,7 @@ class _PuzzlePageState extends State<PuzzlePage> {
                   Text(_feedback!, style: theme.textTheme.titleMedium),
                   const SizedBox(height: 8),
                 ],
-                Text(
-                  tr.t(
-                    'Lösung: ${tr.san(m.best)} – ${tr.san(m.bestLine)}',
-                    'Solution: ${tr.san(m.best)} – ${tr.san(m.bestLine)}',
-                  ),
-                ),
+                Text(tr.t('Lösung: ${tr.san(m.bestLine)}', 'Solution: ${tr.san(m.bestLine)}')),
                 const SizedBox(height: 4),
                 Text(
                   tr.t(

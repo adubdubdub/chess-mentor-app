@@ -4,9 +4,9 @@ Stockfish rechnet, du lernst: Android-App, die eigene Schachpartien auf dem Hand
 und als Puzzles mit Wiederholung einübt. Ohne eigenen Server und ohne Pflicht-Schlüssel. Abgeleitet vom Telegram-Bot
 [chess-mentor](https://github.com/adubdubdub/chess-mentor).
 
-> **Stand: Phase 2.** Partien kommen per Teilen, Einfügen oder Datei in die App. Stockfish analysiert sie auf dem Handy
+> **Stand: Phase 3.** Partien kommen per Teilen, Einfügen oder Datei in die App. Stockfish analysiert sie auf dem Handy
 > wie der Telegram-Bot: Genauigkeit, Fehler-Einstufung, Verlauf und Schlüsselmomente mit Pfeilen und Varianten.
-> Die sokratische Besprechung am Brett ist da, die Puzzles mit Wiederholung folgen.
+> Dazu kommen die sokratische Besprechung am Brett und Puzzles aus eigenen Fehlern mit Wiederholung und Erinnerung.
 
 ## 🧭 Zielbild
 
@@ -34,6 +34,8 @@ Texte entstehen in drei Stufen, nur die erste ist Pflicht:
 chess-mentor-app/
 ├── lib/
 │   ├── analysis/        Port von analysis.py: Gewinnchance, Einstufung, Momente, Motive (reines Dart, testbar)
+│   ├── coach/           Texte des Mentors ohne Sprachmodell: Fragen, Tipps, Erklärungen, Lernpunkt
+│   ├── puzzles/         Wiederholungsplan und vorausgeplante Erinnerungen
 │   ├── engine/          Stockfish auf dem Handy (kleines/großes Netz), Netz-Download, Analyse-Warteschlange
 │   ├── data/            Partien in SQLite, Einstellungen
 │   ├── ui/              Partienliste, Import, Partie- und Momentansicht, Engine-Seite, Texte DE/EN
@@ -96,7 +98,7 @@ Gebaut wird nur `arm64-v8a` (`android.injected.build.abi` in `android/gradle.pro
 - [x] **Phase 0:** Werkzeuge, Prüf-App auf dem Gerät (getestet auf Pixel 6, Android 16)
 - [x] **Phase 1:** PGN-Eingang, Analyse (Vergleich mit dem Bot, beide Netze)
 - [x] **Phase 2:** Besprechung am Brett (Frage, Zug, Prüfung, Tipp, Auflösung, Lernpunkt)
-- [ ] **Phase 3:** Puzzles mit Wiederholung
+- [x] **Phase 3:** Puzzles mit Wiederholung (1 · 3 · 7 · 21 · 60 Tage), tägliche Erinnerung ohne Server
 - [ ] **Phase 4:** Lichess-Abruf und Studien-Export
 - [ ] **Phase 5:** KI-Übergabe und eigener Schlüssel
 - [ ] **Phase 6:** Veröffentlichung als APK, später F-Droid

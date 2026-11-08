@@ -239,13 +239,19 @@ class _PuzzleCard extends StatelessWidget {
                   '$open ${open == 1 ? 'Puzzle' : 'Puzzles'} fällig',
                   '$open ${open == 1 ? 'puzzle' : 'puzzles'} due',
                 )
-              : tr.t('Heute keine Puzzles mehr', 'No more puzzles today'),
+              : s.due > 0
+              ? tr.t('Heute keine Puzzles mehr', 'No more puzzles today')
+              : tr.t('Keine Puzzles fällig', 'No puzzles due'),
         ),
         subtitle: Text(
-          tr.t(
-            '${s.total} aus deinen Fehlern, ${s.mastered} gemeistert',
-            '${s.total} from your mistakes, ${s.mastered} mastered',
-          ),
+          [
+            tr.t(
+              '${s.total} aus deinen Fehlern, ${s.mastered} gemeistert',
+              '${s.total} from your mistakes, ${s.mastered} mastered',
+            ),
+            if (open == 0 && s.due == 0 && s.nextDue != null)
+              tr.t('nächstes am ${_shortDate(s.nextDue!)}', 'next on ${_shortDate(s.nextDue!)}'),
+          ].join(' · '),
         ),
         trailing: const Icon(Icons.chevron_right),
         onTap: onTap,
@@ -308,4 +314,9 @@ Future<Side?> askColor(BuildContext context) {
       actions: [TextButton(onPressed: () => Navigator.pop(context), child: Text(tr.cancel))],
     ),
   );
+}
+
+String _shortDate(String iso) {
+  final d = DateTime.parse(iso);
+  return '${d.day.toString().padLeft(2, '0')}.${d.month.toString().padLeft(2, '0')}.';
 }
