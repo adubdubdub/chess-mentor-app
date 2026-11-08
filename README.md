@@ -64,7 +64,7 @@ und prüft jedes Feld. Ohne den Container wird er übersprungen.
 | Netz | Herkunft | Pixel 6, Tiefe 16, 1 Thread |
 |---|---|---|
 | klein (`light`) | in der App, ~1 MB | 0,73 s je Stellung |
-| groß (`nn-1a298aa575a0`) | Download 98,5 MB, SHA-256-Prüfung | wird gemessen |
+| groß (`nn-1a298aa575a0`) | Download 98,5 MB, SHA-256-Prüfung | 1,26 s je Stellung |
 
 ## ⚙️ Entwicklung
 
@@ -86,7 +86,8 @@ Gebaut wird nur `arm64-v8a` (`android.injected.build.abi` in `android/gradle.pro
 - Die Vorlage von Flutter setzt Gradle auf 8 GB Heap, hier sind es 2 GB.
 - **Zum Testen immer Release bauen:** Im Debug-Build kompiliert das Stockfish-Plugin ohne Optimierung und rechnet um ein
   Vielfaches langsamer (ca. 25 s statt 0,7 s je Stellung).
-- Mehr Threads machen die Analyse bei fester Tiefe nicht schneller (Pixel 6: 4 Threads 1,41 s, 1 Thread 0,73 s).
+- Mehr Threads machen die Analyse bei fester Tiefe nicht schneller (Pixel 6, kleines Netz: 4 Threads 1,28 s, 1 Thread
+  0,73 s; großes Netz: 3,35 s gegenüber 1,26 s).
 - Bei ausgeschaltetem Bildschirm pausiert Android die Engine; die App hält ihn während einer Analyse wach.
 - Die APK ist noch als `testOnly` markiert und braucht `adb install -t`. Vor der Veröffentlichung entfernen.
 
