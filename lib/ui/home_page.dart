@@ -15,6 +15,7 @@ import 'app_scope.dart';
 import 'engine_page.dart';
 import 'game_page.dart';
 import 'puzzle_page.dart';
+import 'mistake_icons.dart';
 import 'strings.dart';
 
 class HomePage extends StatefulWidget {
@@ -273,9 +274,7 @@ class _GameTile extends StatelessWidget {
     final a = game.analysis;
     final p = progress;
     final subtitle = switch (game.status) {
-      GameStatus.done when a != null =>
-        '${tr.accuracy} ${a.accuracy ?? '–'} % · '
-            '${MistakeClass.values.map((c) => '${a.counts[c] ?? 0}${c.glyph}').join(' ')}',
+      GameStatus.done when a != null => '${tr.accuracy} ${a.accuracy ?? '–'} % · ',
       GameStatus.analysing when p != null => tr.progress(p.$1, p.$2),
       GameStatus.waitingColor => tr.waitingColor,
       GameStatus.error => tr.error,
@@ -284,7 +283,18 @@ class _GameTile extends StatelessWidget {
     return ListTile(
       leading: Icon(game.color == Side.black ? Icons.circle : Icons.circle_outlined),
       title: Text('${game.white} – ${game.black}', maxLines: 1, overflow: TextOverflow.ellipsis),
-      subtitle: Text('${game.result} · $subtitle'),
+      subtitle: Text.rich(
+        TextSpan(
+          children: [
+            TextSpan(text: '${game.result} · $subtitle'),
+            if (game.status == GameStatus.done && a != null)
+              for (final c in MistakeClass.values) ...[
+                mistakeSpan(c, size: 15),
+                TextSpan(text: '${a.counts[c] ?? 0}  '),
+              ],
+          ],
+        ),
+      ),
       trailing: game.status == GameStatus.analysing && p != null
           ? SizedBox(width: 24, height: 24, child: CircularProgressIndicator(value: p.$1 / p.$2, strokeWidth: 3))
           : null,

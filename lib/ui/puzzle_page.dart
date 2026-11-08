@@ -7,6 +7,7 @@ import '../analysis/judge.dart';
 import '../coach/coach_texts.dart';
 import '../data/game_store.dart';
 import 'app_scope.dart';
+import 'mistake_icons.dart';
 import 'strings.dart';
 
 /// Puzzles aus eigenen Fehlern: Stellung vor dem Fehler, besten Zug finden, Wiederholung nach Plan.
@@ -29,6 +30,10 @@ class _PuzzlePageState extends State<PuzzlePage> {
   bool _done = false;
   String? _nextDue;
   String? _feedback;
+
+  /// Gewinnchance nach dem letzten eigenen Zug (null = Lösung angezeigt) und dessen Notation.
+  double? _ownWin;
+  String? _ownSan;
   bool _loading = true;
 
   /// Nichts fällig, aber der Nutzer möchte das nächste Puzzle vorziehen.
@@ -67,6 +72,8 @@ class _PuzzlePageState extends State<PuzzlePage> {
       _hint = false;
       _done = false;
       _feedback = null;
+      _ownWin = null;
+      _ownSan = null;
       _nextDue = null;
       _loading = false;
       _early = false;
@@ -94,7 +101,7 @@ class _PuzzlePageState extends State<PuzzlePage> {
     final san = tr.san(pos.makeSan(move).$2);
     setState(() => _judging = true);
     _board!.updatePosition(_game(pos.play(move), lastMove: move));
-    final (verdict, _) = await judgeMove(
+    final (verdict, win, _) = await judgeMove(
       _p!.moment,
       stdUci(pos, move),
       await scope.service.engine(),
@@ -106,6 +113,7 @@ class _PuzzlePageState extends State<PuzzlePage> {
       case Verdict.best || Verdict.good:
         await _finish(
           true,
+          own: (san, win),
           verdict == Verdict.best
               ? tr.t('✅ $san – genau der stärkste Zug!', '✅ $san – exactly the strongest move!')
               : tr.t('✅ $san – auch gut spielbar!', '✅ $san – also playable!'),
@@ -113,25 +121,30 @@ class _PuzzlePageState extends State<PuzzlePage> {
       case Verdict.played || Verdict.weak when _tries >= 1:
         await _finish(
           false,
+          own: (san, win),
           tr.t('❌ $san ist leider auch nicht besser.', '❌ Unfortunately $san is not better either.'),
         );
       case Verdict.played || Verdict.weak:
+        final chance = tr.t(
+          'Gewinnchance nach dem Zug: ${win.round()} %, vorher ${_p!.moment.winBefore.round()} %.',
+          'Winning chance after the move: ${win.round()} %, before ${_p!.moment.winBefore.round()} %.',
+        );
         setState(() {
           _tries = 1;
           _hint = true;
           _feedback = verdict == Verdict.played
               ? tr.t(
-                  '🤔 Das war dein Partiezug von damals. Noch ein Versuch?',
-                  '🤔 That was your move back then. Try again?',
+                  '🤔 Das war dein Partiezug von damals ($chance) Noch ein Versuch?',
+                  '🤔 That was your move back then ($chance) Try again?',
                 )
-              : tr.t('🤔 $san reicht nicht. Noch ein Versuch?', '🤔 $san is not enough. Try again?');
+              : tr.t('🤔 $san reicht nicht. $chance Noch ein Versuch?', '🤔 $san is not enough. $chance Try again?');
         });
         await Future<void>.delayed(const Duration(milliseconds: 600));
         if (mounted) _board!.updatePosition(_game(_pos), animate: false, resetPremove: true);
     }
   }
 
-  Future<void> _finish(bool solved, String? feedback) async {
+  Future<void> _finish(bool solved, String? feedback, {(String, double)? own}) async {
     final scope = AppScope.of(context);
     final due = await scope.store.gradePuzzle(_p!.id, solved);
     await scope.reminders.reschedule();
@@ -140,8 +153,35 @@ class _PuzzlePageState extends State<PuzzlePage> {
       _done = true;
       _nextDue = due;
       _feedback = feedback;
+      _ownSan = own?.$1;
+      _ownWin = own?.$2;
     });
     _board!.updatePosition(_game(_pos), animate: false, resetPremove: true);
+  }
+
+  /// Auswertung nach dem Puzzle: Gewinnchance, Folge des Partiezugs und Begründung (alles aus den Engine-Fakten).
+  Widget _evaluation(Tr tr, CoachTexts coach) {
+    final m = _p!.moment;
+    String pct(double v) => '${v.round()} %';
+    String diff(double v) => '${v >= 0 ? '+' : '−'}${v.abs().round()}';
+    final lines = <String>[
+      if (_ownWin != null && _ownSan != null)
+        tr.t(
+          '📊 Dein Zug $_ownSan: ${pct(_ownWin!)} (${diff(_ownWin! - m.winBefore)} Punkte gegenüber ${pct(m.winBefore)} vorher).',
+          '📊 Your move $_ownSan: ${pct(_ownWin!)} (${diff(_ownWin! - m.winBefore)} points vs. ${pct(m.winBefore)} before).',
+        ),
+      tr.t(
+        '📊 Bester Zug ${tr.san(m.best)}: ${pct(m.winBefore)}. Dein Partiezug ${tr.san(m.played)}: nur noch ${pct(m.winAfter)} (${diff(-m.drop)} Punkte).',
+        '📊 Best move ${tr.san(m.best)}: ${pct(m.winBefore)}. Your game move ${tr.san(m.played)}: only ${pct(m.winAfter)} (${diff(-m.drop)} points).',
+      ),
+      if (m.replyLine.isNotEmpty)
+        tr.t(
+          '💥 Folge des Partiezugs: erwartet wird ${tr.san(m.replyLine)}.',
+          '💥 Consequence of the game move: expected is ${tr.san(m.replyLine)}.',
+        ),
+      '💡 ${coach.explanation(m)}',
+    ];
+    return Text(lines.join('\n\n'));
   }
 
   String _date(String iso) {
@@ -292,12 +332,21 @@ class _PuzzlePageState extends State<PuzzlePage> {
                 ],
                 Text(tr.t('Lösung: ${tr.san(m.bestLine)}', 'Solution: ${tr.san(m.bestLine)}')),
                 const SizedBox(height: 4),
-                Text(
-                  tr.t(
-                    'In der Partie hattest du ${tr.san(m.played)}${m.mistake.glyph} gespielt.',
-                    'In the game you played ${tr.san(m.played)}${m.mistake.glyph}.',
+                Text.rich(
+                  TextSpan(
+                    children: [
+                      mistakeSpan(m.mistake),
+                      TextSpan(
+                        text: tr.t(
+                          ' In der Partie hattest du ${tr.san(m.played)}${m.mistake.glyph} gespielt.',
+                          ' In the game you played ${tr.san(m.played)}${m.mistake.glyph}.',
+                        ),
+                      ),
+                    ],
                   ),
                 ),
+                const SizedBox(height: 8),
+                _evaluation(tr, coach),
                 const SizedBox(height: 8),
                 Text(
                   _nextDue == null

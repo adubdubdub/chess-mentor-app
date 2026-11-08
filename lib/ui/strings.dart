@@ -49,7 +49,7 @@ class Tr {
   String get bestLine => t('Beste Fortsetzung', 'Best line');
   String get replyLine => t('Nach deinem Zug', 'After your move');
   String get winChance => t('Gewinnchance', 'Winning chance');
-  String get alternatives => t('Engine-Züge', 'Engine moves');
+  String get alternatives => t('Kandidatenzüge (Gewinnchance)', 'Candidate moves (winning chance)');
   String get puzzles => t('Puzzles', 'Puzzles');
 
   String progress(int done, int total) => t('Stellung $done von $total', 'Position $done of $total');

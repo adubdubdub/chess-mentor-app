@@ -68,6 +68,25 @@ und prüft jedes Feld. Ohne den Container wird er übersprungen.
 | klein (`light`) | in der App, ~1 MB | 0,73 s je Stellung |
 | groß (`nn-1a298aa575a0`) | Download 98,5 MB, SHA-256-Prüfung | 1,26 s je Stellung |
 
+## 🧩 Puzzle-Auswertung
+
+Nach jedem Puzzle (gelöst oder Lösung gezeigt) erklärt die App, **warum** ein Zug gut oder schlecht war. Alle Zahlen
+kommen von Stockfish, die Sätze aus Textbausteinen (`coach_texts.dart`), also ohne Sprachmodell und offline.
+
+```mermaid
+flowchart LR
+    A["🧩 Zug am Brett"] --> B["♟️ Stockfish<br/>judgeMove"]
+    B --> C{"Urteil"}
+    C -- "falsch, 1. Versuch" --> D["🤔 Hinweis mit<br/>Gewinnchance deines Zugs"]
+    C -- "richtig oder 2. Fehlversuch<br/>oder Lösung" --> E["📊 Auswertung"]
+    E --> F["Gewinnchance:<br/>vorher · dein Zug · Partiezug"]
+    E --> G["💥 Folge des Partiezugs"]
+    E --> H["💡 Warum-Satz<br/>aus Motiven"]
+```
+
+Das Muster stammt vom Telegram-Bot, dort ergänzt Claude die Erklärung. Abstimmung der beiden Projekte:
+Brain-Notiz „Schach-Mentor – Bot und App abgleichen“.
+
 ## ⚙️ Entwicklung
 
 ```bash
@@ -98,7 +117,7 @@ Gebaut wird nur `arm64-v8a` (`android.injected.build.abi` in `android/gradle.pro
 - [x] **Phase 0:** Werkzeuge, Prüf-App auf dem Gerät (getestet auf Pixel 6, Android 16)
 - [x] **Phase 1:** PGN-Eingang, Analyse (Vergleich mit dem Bot, beide Netze)
 - [x] **Phase 2:** Besprechung am Brett (Frage, Zug, Prüfung, Tipp, Auflösung, Lernpunkt)
-- [x] **Phase 3:** Puzzles mit Wiederholung (1 · 3 · 7 · 21 · 60 Tage), tägliche Erinnerung ohne Server
+- [x] **Phase 3:** Puzzles mit Wiederholung (1 · 3 · 7 · 21 · 60 Tage), tägliche Erinnerung ohne Server, Auswertung mit Gewinnchance, Folge und Begründung
 - [ ] **Phase 4:** Lichess-Abruf und Studien-Export
 - [ ] **Phase 5:** KI-Übergabe und eigener Schlüssel
 - [ ] **Phase 6:** Veröffentlichung als APK, später F-Droid

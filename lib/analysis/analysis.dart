@@ -13,6 +13,9 @@ import 'uci.dart';
 
 const maxMoments = 4;
 
+/// Länge der gespeicherten Varianten zum Durchklicken (Halbzüge).
+const pvPlies = 10;
+
 /// Ab diesem Verlust an Gewinnchance (Prozentpunkte) wird ein eigener Zug zum Wiederholungs-Puzzle.
 const puzzleMinDrop = 10.0;
 
@@ -128,6 +131,8 @@ class Moment {
     required this.mistake,
     required this.phase,
     required this.motifs,
+    this.bestPv = const [],
+    this.replyPv = const [],
   });
 
   final int ply;
@@ -150,6 +155,23 @@ class Moment {
   final GamePhase phase;
   final List<Motif> motifs;
 
+  /// Beste Variante als Standard-UCI, beginnt mit dem besten Zug (höchstens [pvPlies] Halbzüge).
+  final List<String> bestPv;
+
+  /// Partiezug und erwartete Fortsetzung als Standard-UCI (höchstens [pvPlies] Halbzüge).
+  final List<String> replyPv;
+
+  /// Beste Variante zum Durchklicken; ältere Analysen ohne [bestPv] werden aus [bestLine] rekonstruiert.
+  List<String> get bestMoves => bestPv.isNotEmpty ? bestPv : pvFromLine(Chess.fromSetup(Setup.parseFen(fen)), bestLine);
+
+  /// Partiezug mit erwarteter Antwort zum Durchklicken (Rekonstruktion wie bei [bestMoves]).
+  List<String> get playedMoves {
+    if (replyPv.isNotEmpty) return replyPv;
+    final pos = Chess.fromSetup(Setup.parseFen(fen));
+    final move = legalUci(pos, playedUci);
+    return [playedUci, if (move != null) ...pvFromLine(pos.play(move), replyLine)];
+  }
+
   String get best => alternatives.first.san;
   String get bestUci => alternatives.first.uci;
 
@@ -171,6 +193,8 @@ class Moment {
     'mistake': mistake.name,
     'phase': phase.name,
     'motifs': [for (final m in motifs) m.toJson()],
+    'bestPv': bestPv,
+    'replyPv': replyPv,
   };
 
   factory Moment.fromJson(Map<String, dynamic> j) => Moment(
@@ -191,6 +215,8 @@ class Moment {
     mistake: MistakeClass.values.byName(j['mistake'] as String),
     phase: GamePhase.values.byName(j['phase'] as String),
     motifs: [for (final m in j['motifs'] as List) Motif.fromJson(m as Map<String, dynamic>)],
+    bestPv: [for (final u in j['bestPv'] as List? ?? const []) u as String],
+    replyPv: [for (final u in j['replyPv'] as List? ?? const []) u as String],
   );
 }
 
@@ -209,7 +235,8 @@ class GameAnalysis {
     required this.evals,
     required this.engine,
     required this.depth,
-  });
+    List<Moment>? flagged,
+  }) : _flagged = flagged; // ignore: prefer_initializing_formals
 
   final Side color;
   final String white;
@@ -225,6 +252,17 @@ class GameAnalysis {
 
   /// Alle eigenen Züge ab „Fehler“.
   final List<Moment> puzzles;
+
+  final List<Moment>? _flagged;
+
+  /// Alle eigenen Züge ab „Ungenauigkeit“, nach Zugfolge. Ältere Analysen kennen nur Schlüsselmomente und Puzzles.
+  List<Moment> get flagged {
+    if (_flagged != null) return _flagged;
+    final byPly = {
+      for (final m in [...moments, ...puzzles]) m.ply: m,
+    };
+    return byPly.values.toList()..sort((a, b) => a.ply.compareTo(b.ply));
+  }
 
   /// Gewinnchance von Weiß nach jedem Halbzug (Index 0 = Startstellung).
   final List<double> evals;
@@ -247,6 +285,7 @@ class GameAnalysis {
     'evals': evals,
     'engine': engine,
     'depth': depth,
+    'flagged': [for (final m in flagged) m.toJson()],
   };
 
   factory GameAnalysis.fromJson(Map<String, dynamic> j) => GameAnalysis(
@@ -265,6 +304,9 @@ class GameAnalysis {
     evals: [for (final e in j['evals'] as List) (e as num).toDouble()],
     engine: j['engine'] as String,
     depth: j['depth'] as int,
+    flagged: j['flagged'] == null
+        ? null
+        : [for (final m in j['flagged'] as List) Moment.fromJson(m as Map<String, dynamic>)],
   );
 }
 
@@ -339,6 +381,7 @@ Future<GameAnalysis> analyseGame(
     ],
     engine: engineName,
     depth: depth,
+    flagged: moments,
   );
 }
 
@@ -399,5 +442,7 @@ Moment _moment(
     mistake: cls,
     phase: phase(pos),
     motifs: motifs,
+    bestPv: legalPrefix(pos, best.first.pv, pvPlies),
+    replyPv: [uci[ply], ...legalPrefix(afterPos, reply, pvPlies - 1)],
   );
 }

@@ -7,7 +7,8 @@ import '../analysis/chess_utils.dart';
 import '../analysis/judge.dart';
 import '../coach/coach_texts.dart';
 import 'app_scope.dart';
-import 'game_page.dart' show classColors;
+import 'line_viewer.dart';
+import 'mistake_icons.dart';
 import 'strings.dart';
 
 /// Sokratische Besprechung: je Schlüsselmoment eine Frage, Zug am Brett, Prüfung durch Stockfish, Tipp und Auflösung.
@@ -30,6 +31,9 @@ class _ReviewPageState extends State<ReviewPage> {
 
   /// Rückmeldung zum letzten Versuch (Lob, „etwas Besseres“, Auflösung).
   String? _feedback;
+
+  /// Eigener Versuch, der weder bester Zug noch Partiezug war: Urteil, Gewinnchance und erwartete Variante.
+  (Verdict, double, List<String>)? _attempt;
   late ChessboardController _board;
 
   List<Moment> get _moments => widget.analysis.moments;
@@ -71,22 +75,27 @@ class _ReviewPageState extends State<ReviewPage> {
     setState(() => _judging = true);
     _board.updatePosition(_game(pos.play(move), lastMove: move));
     final scope = AppScope.of(context);
-    final (verdict, _) = await judgeMove(_m, uci, await scope.service.engine(), depth: scope.settings.depth);
+    final result = await judgeMove(_m, uci, await scope.service.engine(), depth: scope.settings.depth);
+    final verdict = result.$1;
     if (!mounted) return;
     setState(() {
       _judging = false;
+      if (verdict == Verdict.good || verdict == Verdict.weak) _attempt = result;
       switch (verdict) {
         case Verdict.best:
-          _reveal(tr.t('✅ $san – genau das ist der stärkste Zug!', '✅ $san – exactly the strongest move!'));
+          final b = CoachTexts.mark('b', san);
+          _reveal(tr.t('✅ $b – genau das ist der stärkste Zug!', '✅ $b – exactly the strongest move!'));
         case Verdict.good:
+          final a = CoachTexts.mark('a', san);
           _reveal(
             tr.t(
-              '👍 $san ist auch gut spielbar, fast so stark wie der Engine-Zug.',
-              '👍 $san is also playable, almost as strong as the engine move.',
+              '👍 $a ist auch gut spielbar, fast so stark wie der beste Zug.',
+              '👍 $a is also playable, almost as strong as the best move.',
             ),
           );
         case Verdict.played || Verdict.weak when _tries >= 1:
-          _reveal(tr.t('❌ $san ist leider auch nicht besser.', '❌ Unfortunately $san is not better either.'));
+          final a = CoachTexts.mark(verdict == Verdict.played ? 'p' : 'a', san);
+          _reveal(tr.t('❌ $a ist leider auch nicht besser.', '❌ Unfortunately $a is not better either.'));
         case Verdict.played || Verdict.weak:
           _tries = 1;
           _hint = true;
@@ -125,6 +134,7 @@ class _ReviewPageState extends State<ReviewPage> {
       _hint = false;
       _revealed = false;
       _feedback = null;
+      _attempt = null;
     });
     _resetBoard();
   }
@@ -150,8 +160,7 @@ class _ReviewPageState extends State<ReviewPage> {
     final theme = Theme.of(context);
     final m = _m;
     final width = MediaQuery.sizeOf(context).width;
-    final played = Move.parse(m.playedUci) as NormalMove;
-    final best = Move.parse(m.bestUci) as NormalMove;
+    final attempt = _attempt;
     return ListView(
       children: [
         Padding(
@@ -161,18 +170,17 @@ class _ReviewPageState extends State<ReviewPage> {
             style: theme.textTheme.labelLarge,
           ),
         ),
-        Chessboard(
-          size: width,
-          controller: _board,
-          orientation: widget.analysis.color,
-          onMove: _onMove,
-          shapes: _revealed
-              ? {
-                  Arrow(color: const Color(0xCCD64545), orig: played.from, dest: played.to),
-                  Arrow(color: const Color(0xCC15781B), orig: best.from, dest: best.to),
-                }
-              : const {},
-        ),
+        if (_revealed)
+          LineViewer(
+            key: ValueKey('line$_idx'),
+            fen: m.fen,
+            orientation: widget.analysis.color,
+            lastMove: m.lastMove,
+            options: lineOptions(tr, m, attempt: attempt),
+            initial: 1,
+          )
+        else
+          Chessboard(size: width, controller: _board, orientation: widget.analysis.color, onMove: _onMove),
         Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -181,7 +189,7 @@ class _ReviewPageState extends State<ReviewPage> {
               if (!_revealed) ...[
                 Text('❓ ${coach.question(m)}', style: theme.textTheme.titleMedium),
                 if (_hint) ...[const SizedBox(height: 8), Text('💡 ${coach.tip(m)}')],
-                if (_feedback != null) ...[const SizedBox(height: 8), Text(_feedback!)],
+                if (_feedback != null) ...[const SizedBox(height: 8), MoveText(_feedback!)],
                 const SizedBox(height: 8),
                 if (_judging)
                   Row(
@@ -217,23 +225,24 @@ class _ReviewPageState extends State<ReviewPage> {
                 ),
               ] else ...[
                 if (_feedback != null) ...[
-                  Text(_feedback!, style: theme.textTheme.titleMedium),
+                  MoveText(_feedback!, style: theme.textTheme.titleMedium),
                   const SizedBox(height: 8),
                 ],
                 Row(
                   children: [
-                    CircleAvatar(
-                      radius: 12,
-                      backgroundColor: classColors[m.mistake],
-                      child: Text(m.mistake.glyph, style: const TextStyle(fontSize: 11)),
-                    ),
+                    MistakeBadge(m.mistake, size: 26),
                     const SizedBox(width: 8),
-                    Text('${tr.san(m.played)} → ${tr.san(m.best)}', style: theme.textTheme.titleMedium),
+                    Expanded(
+                      child: MoveText(
+                        '${CoachTexts.mark('p', tr.san(m.played))} → ${CoachTexts.mark('b', tr.san(m.best))}',
+                        style: theme.textTheme.titleMedium,
+                      ),
+                    ),
                   ],
                 ),
-                const SizedBox(height: 8),
-                Text(coach.explanation(m)),
-                const SizedBox(height: 16),
+                const SizedBox(height: 12),
+                ...explanationSections(coach, m, attempt: attempt),
+                const SizedBox(height: 4),
                 FilledButton.icon(
                   onPressed: _next,
                   icon: Icon(_idx + 1 >= _moments.length ? Icons.flag : Icons.arrow_forward),
@@ -277,4 +286,44 @@ class _ReviewPageState extends State<ReviewPage> {
       ],
     );
   }
+}
+
+/// Varianten zum Durchklicken: Partiezug (rot), bester Zug (grün) und ggf. dein Versuch (grau).
+List<LineOption> lineOptions(Tr tr, Moment m, {(Verdict, double, List<String>)? attempt}) => [
+  LineOption(label: tr.t('Partiezug', 'Game move'), color: playedColor, moves: m.playedMoves, win: m.winAfter),
+  LineOption(label: tr.t('Bester Zug', 'Best move'), color: bestColor, moves: m.bestMoves, win: m.winBefore),
+  if (attempt != null && attempt.$3.isNotEmpty)
+    LineOption(label: tr.t('Dein Versuch', 'Your try'), color: attemptColor, moves: attempt.$3, win: attempt.$2),
+];
+
+/// Erklärung in farbigen Abschnitten: warum der Partiezug schwach ist, warum der beste Zug stark ist, dein Versuch.
+List<Widget> explanationSections(CoachTexts coach, Moment m, {(Verdict, double, List<String>)? attempt}) {
+  final tr = coach.tr;
+  final p = CoachTexts.mark('p', tr.san(m.played));
+  final b = CoachTexts.mark('b', tr.san(m.best));
+  return [
+    ColoredSection(
+      color: playedColor,
+      title: tr.t('Warum $p nicht gut war', 'Why $p was not good'),
+      text: coach.whyPlayedBad(m),
+    ),
+    ColoredSection(
+      color: bestColor,
+      title: tr.t('Warum $b stärker ist', 'Why $b is stronger'),
+      text: coach.whyBestGood(m),
+    ),
+    if (attempt != null && attempt.$3.isNotEmpty)
+      ColoredSection(
+        color: attemptColor,
+        title: tr.t('Dein Versuch', 'Your try'),
+        text: coach.aboutAttempt(m, attempt.$3, attempt.$1, attempt.$2),
+      ),
+    Text(
+      tr.t(
+        'Tippe oben auf eine Variante und blättere mit ‹ › oder Wischen durch die Züge.',
+        'Tap a line above and step through the moves with ‹ › or by swiping.',
+      ),
+      style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+    ),
+  ];
 }

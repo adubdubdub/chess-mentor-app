@@ -32,6 +32,14 @@ class Settings extends ChangeNotifier {
   int get reminderMinutes => _prefs.getInt('reminderMinutes') ?? 18 * 60;
   set reminderMinutes(int v) => _set(() => _prefs.setInt('reminderMinutes', v));
 
+  /// Filter der Liste „Alle markierten Züge“: review (besprochen), blunder, mistake, inaccuracy.
+  Set<String> get momentFilter => (_prefs.getStringList('momentFilter') ?? const ['review']).toSet();
+  set momentFilter(Set<String> v) => _set(() => _prefs.setStringList('momentFilter', v.toList()));
+
+  /// Hinweis zur Bedienung des Verlaufs schon gesehen (nach erstem Antippen oder Zoomen).
+  bool get chartHintSeen => _prefs.getBool('chartHintSeen') ?? false;
+  set chartHintSeen(bool v) => _set(() => _prefs.setBool('chartHintSeen', v));
+
   void _set(Future<bool> Function() write) {
     write();
     notifyListeners();

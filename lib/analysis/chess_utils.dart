@@ -75,6 +75,34 @@ String numbered(Position pos, List<NormalMove> moves) {
   return (numbered(pos, legal), material(p, me) - start);
 }
 
+/// Legaler Anfang einer Engine-Variante (höchstens [n] Züge) als Standard-UCI.
+List<String> legalPrefix(Position pos, List<String> pv, int n) {
+  final out = <String>[];
+  var p = pos;
+  for (final uci in pv.take(n)) {
+    final move = legalUci(p, uci);
+    if (move == null) break;
+    out.add(uci);
+    p = p.play(move);
+  }
+  return out;
+}
+
+/// Nummerierte englische SAN ("12...Nf6 13.Bxf4") zurück in Standard-UCI, bis zum ersten unlesbaren Zug.
+List<String> pvFromLine(Position pos, String line) {
+  final out = <String>[];
+  var p = pos;
+  for (final token in line.split(' ')) {
+    final san = token.replaceFirst(RegExp(r'^\d+\.(\.\.)?'), '');
+    if (san.isEmpty) continue;
+    final move = p.parseSan(san);
+    if (move is! NormalMove) break;
+    out.add(stdUci(p, move));
+    p = p.play(move);
+  }
+  return out;
+}
+
 /// Deutsche Figurenbuchstaben (S, L, T, D, K) in SAN.
 String germanSan(String san) =>
     san.replaceAllMapped(RegExp('[NBRQ]'), (m) => const {'N': 'S', 'B': 'L', 'R': 'T', 'Q': 'D'}[m[0]]!);
