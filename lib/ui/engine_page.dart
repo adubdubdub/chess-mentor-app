@@ -119,7 +119,7 @@ class _EnginePageState extends State<EnginePage> {
     final settings = AppScope.of(context).settings;
     final theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(title: Text(tr.engine)),
+      appBar: AppBar(title: Text(tr.t('Einstellungen', 'Settings'))),
       body: ListenableBuilder(
         listenable: settings,
         builder: (context, _) => ListView(
@@ -187,6 +187,44 @@ class _EnginePageState extends State<EnginePage> {
             Text(tr.benchmarkHint, style: theme.textTheme.bodySmall),
             if (_benching) const Padding(padding: EdgeInsets.only(top: 12), child: LinearProgressIndicator()),
             for (final line in _bench) Padding(padding: const EdgeInsets.only(top: 8), child: Text(line)),
+            const Divider(height: 32),
+            Text(tr.puzzles, style: theme.textTheme.titleMedium),
+            const SizedBox(height: 8),
+            Text(tr.t('Pro Tag höchstens', 'At most per day')),
+            const SizedBox(height: 4),
+            SegmentedButton<int>(
+              segments: const [
+                ButtonSegment(value: 3, label: Text('3')),
+                ButtonSegment(value: 5, label: Text('5')),
+                ButtonSegment(value: 10, label: Text('10')),
+              ],
+              selected: {settings.puzzlesPerDay},
+              onSelectionChanged: (s) => settings.puzzlesPerDay = s.first,
+            ),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(tr.t('Tägliche Erinnerung', 'Daily reminder')),
+              subtitle: Text(tr.t('Nur an Tagen mit fälligen Puzzles', 'Only on days with due puzzles')),
+              value: settings.reminders,
+              onChanged: (v) => settings.reminders = v,
+            ),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              enabled: settings.reminders,
+              title: Text(tr.t('Uhrzeit', 'Time')),
+              trailing: Text(
+                '${(settings.reminderMinutes ~/ 60).toString().padLeft(2, '0')}:'
+                '${(settings.reminderMinutes % 60).toString().padLeft(2, '0')}',
+                style: theme.textTheme.titleMedium,
+              ),
+              onTap: () async {
+                final t = await showTimePicker(
+                  context: context,
+                  initialTime: TimeOfDay(hour: settings.reminderMinutes ~/ 60, minute: settings.reminderMinutes % 60),
+                );
+                if (t != null) settings.reminderMinutes = t.hour * 60 + t.minute;
+              },
+            ),
           ],
         ),
       ),

@@ -21,6 +21,17 @@ class Settings extends ChangeNotifier {
   int get threads => _prefs.getInt('threads') ?? 1;
   set threads(int v) => _set(() => _prefs.setInt('threads', v));
 
+  /// Höchstens so viele Puzzles pro Tag (Bot: 5).
+  int get puzzlesPerDay => _prefs.getInt('puzzlesPerDay') ?? 5;
+  set puzzlesPerDay(int v) => _set(() => _prefs.setInt('puzzlesPerDay', v));
+
+  bool get reminders => _prefs.getBool('reminders') ?? true;
+  set reminders(bool v) => _set(() => _prefs.setBool('reminders', v));
+
+  /// Uhrzeit der Erinnerung in Minuten nach Mitternacht (Bot: 18:00).
+  int get reminderMinutes => _prefs.getInt('reminderMinutes') ?? 18 * 60;
+  set reminderMinutes(int v) => _set(() => _prefs.setInt('reminderMinutes', v));
+
   void _set(Future<bool> Function() write) {
     write();
     notifyListeners();

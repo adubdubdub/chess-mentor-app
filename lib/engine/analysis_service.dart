@@ -21,6 +21,9 @@ class AnalysisService extends ChangeNotifier {
   final Settings settings;
   final NetManager nets;
 
+  /// Nach jeder gespeicherten Analyse (neue Puzzles → Erinnerungen neu planen).
+  Future<void> Function()? onAnalysed;
+
   MobileEngine? _engine;
   (EngineNet, int)? _engineConfig;
   final _queue = <int>[];
@@ -103,6 +106,7 @@ class AnalysisService extends ChangeNotifier {
             },
           );
           await store.setAnalysis(id, result);
+          await onAnalysed?.call();
         } catch (e) {
           await store.setStatus(id, GameStatus.error, error: e.toString());
         }

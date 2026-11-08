@@ -14,6 +14,7 @@ import '../engine/analysis_service.dart';
 import 'app_scope.dart';
 import 'engine_page.dart';
 import 'game_page.dart';
+import 'puzzle_page.dart';
 import 'strings.dart';
 
 class HomePage extends StatefulWidget {
@@ -27,6 +28,7 @@ class _HomePageState extends State<HomePage> {
   StreamSubscription<List<SharedMediaFile>>? _shareSub;
   AnalysisService? _service;
   List<StoredGame> _games = [];
+  PuzzleStats? _stats;
 
   @override
   void initState() {
@@ -55,8 +57,15 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _reload() async {
-    final games = await AppScope.of(context).store.all();
-    if (mounted) setState(() => _games = games);
+    final store = AppScope.of(context).store;
+    final games = await store.all();
+    final stats = await store.puzzleStats();
+    if (mounted) {
+      setState(() {
+        _games = games;
+        _stats = stats;
+      });
+    }
   }
 
   Future<void> _onShared(List<SharedMediaFile> files) async {
@@ -100,6 +109,9 @@ class _HomePageState extends State<HomePage> {
     await _reload();
     if (mounted) _open(id);
   }
+
+  void _openPuzzles() =>
+      Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const PuzzlePage())).then((_) => _reload());
 
   void _open(int id) =>
       Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => GamePage(id: id))).then((_) => _reload());
@@ -169,8 +181,8 @@ class _HomePageState extends State<HomePage> {
         title: Text(tr.appTitle),
         actions: [
           IconButton(
-            icon: const Icon(Icons.memory),
-            tooltip: tr.engine,
+            icon: const Icon(Icons.settings),
+            tooltip: tr.t('Einstellungen', 'Settings'),
             onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const EnginePage())),
           ),
         ],
@@ -189,14 +201,55 @@ class _HomePageState extends State<HomePage> {
             )
           : ListView.separated(
               padding: const EdgeInsets.only(bottom: 96),
-              itemCount: _games.length,
-              separatorBuilder: (_, _) => const Divider(height: 1),
-              itemBuilder: (context, i) => _GameTile(
-                game: _games[i],
-                progress: service.progress[_games[i].id],
-                onTap: () => _open(_games[i].id),
-              ),
+              itemCount: _games.length + 1,
+              separatorBuilder: (_, i) => i == 0 ? const SizedBox.shrink() : const Divider(height: 1),
+              itemBuilder: (context, i) => i == 0
+                  ? _PuzzleCard(stats: _stats, onTap: _openPuzzles)
+                  : _GameTile(
+                      game: _games[i - 1],
+                      progress: service.progress[_games[i - 1].id],
+                      onTap: () => _open(_games[i - 1].id),
+                    ),
             ),
+    );
+  }
+}
+
+/// Hinweis auf fällige Puzzles oben in der Partienliste.
+class _PuzzleCard extends StatelessWidget {
+  const _PuzzleCard({required this.stats, required this.onTap});
+
+  final PuzzleStats? stats;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = stats;
+    if (s == null || s.total == 0) return const SizedBox.shrink();
+    final tr = Tr.of(context);
+    final perDay = AppScope.of(context).settings.puzzlesPerDay;
+    final open = (perDay - s.doneToday).clamp(0, s.due);
+    return Card(
+      margin: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+      child: ListTile(
+        leading: const Text('🧩', style: TextStyle(fontSize: 28)),
+        title: Text(
+          open > 0
+              ? tr.t(
+                  '$open ${open == 1 ? 'Puzzle' : 'Puzzles'} fällig',
+                  '$open ${open == 1 ? 'puzzle' : 'puzzles'} due',
+                )
+              : tr.t('Heute keine Puzzles mehr', 'No more puzzles today'),
+        ),
+        subtitle: Text(
+          tr.t(
+            '${s.total} aus deinen Fehlern, ${s.mastered} gemeistert',
+            '${s.total} from your mistakes, ${s.mastered} mastered',
+          ),
+        ),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: onTap,
+      ),
     );
   }
 }
