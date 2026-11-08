@@ -91,6 +91,8 @@ void main() {
           final explanation = coach.explanation(m);
           expect(explanation, contains(coach.tr.san(m.played)));
           expect(explanation, contains(coach.tr.san(m.best)));
+          // Der beste Zug steht nur einmal da, nicht noch einmal am Anfang der Fortsetzung
+          expect(coach.tr.san(m.best).allMatches(explanation).length, 1, reason: explanation);
         }
         expect(coach.summary(a), isNotEmpty);
         expect(coach.learningPoint(a), isNotEmpty);

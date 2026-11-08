@@ -101,8 +101,8 @@ class CoachTexts {
   String explanation(Moment m) {
     final parts = <String>[
       tr.t(
-        '${tr.san(m.played)} (${tr.mistake(m.mistake)}): Deine Gewinnchance fiel von ${m.winBefore.round()} % auf ${m.winAfter.round()} %.',
-        '${tr.san(m.played)} (${tr.mistake(m.mistake)}): your winning chance dropped from ${m.winBefore.round()} % to ${m.winAfter.round()} %.',
+        '${tr.san(m.played)} (${tr.mistake(m.mistake)}): Deine Gewinnchance fiel von ${m.winBefore.round()} % auf ${m.winAfter.round()} %.',
+        '${tr.san(m.played)} (${tr.mistake(m.mistake)}): your winning chance dropped from ${m.winBefore.round()} % to ${m.winAfter.round()} %.',
       ),
     ];
     if (_has(m, 'allows_mate')) {
@@ -113,11 +113,11 @@ class CoachTexts {
     if (m.replyLine.isNotEmpty) {
       parts.add(tr.t('Die beste Antwort darauf: ${tr.san(m.replyLine)}.', 'The best reply: ${tr.san(m.replyLine)}.'));
     }
+    // bestLine beginnt mit dem besten Zug selbst; als Fortsetzung nur den Rest zeigen
+    final rest = m.bestLine.startsWith(m.best) ? m.bestLine.substring(m.best.length).trim() : m.bestLine;
     parts.add(
       tr.t('Stärker war ${tr.san(m.best)}', 'Stronger was ${tr.san(m.best)}') +
-          (m.bestLine.isNotEmpty
-              ? tr.t(' mit der Fortsetzung ${tr.san(m.bestLine)}.', ', continuing ${tr.san(m.bestLine)}.')
-              : '.'),
+          (rest.isNotEmpty ? tr.t(', danach etwa ${tr.san(rest)}.', ', followed by ${tr.san(rest)}.') : '.'),
     );
     final mate = _n(m, 'mate_missed');
     final gain = _n(m, 'wins_material');
@@ -145,8 +145,8 @@ class CoachTexts {
     final second = blunders == 0
         ? tr.t('Ohne Patzer – das ist die halbe Miete.', 'No blunders – that is half the battle.')
         : tr.t(
-            '$blunders ${blunders == 1 ? 'Patzer hat' : 'Patzer haben'} die Partie am stärksten beeinflusst, die schauen wir uns an.',
-            '$blunders ${blunders == 1 ? 'blunder' : 'blunders'} shaped the game the most – let’s look at ${blunders == 1 ? 'it' : 'them'}.',
+            '$blunders ${blunders == 1 ? 'Patzer hat' : 'Patzer haben'} die Partie am stärksten beeinflusst.',
+            '$blunders ${blunders == 1 ? 'blunder' : 'blunders'} shaped the game the most.',
           );
     return '$first $second';
   }
