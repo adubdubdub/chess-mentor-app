@@ -1,0 +1,235 @@
+{
+ "depth": 12,
+ "color": "black",
+ "engine": "Stockfish 17.1",
+ "analysis": {
+  "color": "Schwarz",
+  "white": "Legall de Kermeur",
+  "black": "Saint Brie",
+  "result": "1-0",
+  "opening": "",
+  "moves": 13,
+  "accuracy": 74,
+  "counts": {
+   "Patzer": 1,
+   "Fehler": 1,
+   "Ungenauigkeit": 1
+  },
+  "moments": [
+   {
+    "ply": 5,
+    "move_no": 3,
+    "fen": "rnbqkbnr/ppp2ppp/3p4/4p3/2B1P3/5N2/PPPP1PPP/RNBQK2R b KQkq - 1 3",
+    "last_move": "f1c4",
+    "opponent_last": "3.Lc4",
+    "played": "3...Lg4",
+    "played_uci": "c8g4",
+    "best": "3...Le7",
+    "best_uci": "f8e7",
+    "alternatives": [
+     {
+      "move": "3...Le7",
+      "uci": "f8e7",
+      "win": 48.5
+     },
+     {
+      "move": "3...Sf6",
+      "uci": "g8f6",
+      "win": 47.9
+     },
+     {
+      "move": "3...Sc6",
+      "uci": "b8c6",
+      "win": 46.1
+     }
+    ],
+    "best_line": "3...Le7 4.d4 exd4 5.Dxd4 Sf6 6.O-O",
+    "reply_line": "4.h3 Lh5 5.d4 Sd7 6.g4",
+    "threat_reply": "4.h3",
+    "win_before": 48.5,
+    "win_after": 42.1,
+    "drop": 6.4,
+    "class": "Ungenauigkeit",
+    "glyph": "?!",
+    "phase": "Eröffnung",
+    "motifs": []
+   },
+   {
+    "ply": 7,
+    "move_no": 4,
+    "fen": "rn1qkbnr/ppp2ppp/3p4/4p3/2B1P1b1/2N2N2/PPPP1PPP/R1BQK2R b KQkq - 3 4",
+    "last_move": "b1c3",
+    "opponent_last": "4.Sc3",
+    "played": "4...g6",
+    "played_uci": "g7g6",
+    "best": "4...Sf6",
+    "best_uci": "g8f6",
+    "alternatives": [
+     {
+      "move": "4...Sf6",
+      "uci": "g8f6",
+      "win": 46.1
+     },
+     {
+      "move": "4...Sc6",
+      "uci": "b8c6",
+      "win": 46.0
+     },
+     {
+      "move": "4...Le7",
+      "uci": "f8e7",
+      "win": 44.7
+     }
+    ],
+    "best_line": "4...Sf6 5.h3 Lxf3 6.Dxf3 Sc6 7.Sd5",
+    "reply_line": "5.Sxe5 dxe5 6.Dxg4 Sf6 7.Dg3",
+    "threat_reply": "5.Sxe5",
+    "win_before": 46.1,
+    "win_after": 31.1,
+    "drop": 14.9,
+    "class": "Fehler",
+    "glyph": "?",
+    "phase": "Eröffnung",
+    "motifs": []
+   },
+   {
+    "ply": 9,
+    "move_no": 5,
+    "fen": "rn1qkbnr/ppp2p1p/3p2p1/4N3/2B1P1b1/2N5/PPPP1PPP/R1BQK2R b KQkq - 0 5",
+    "last_move": "f3e5",
+    "opponent_last": "5.Sxe5",
+    "played": "5...Lxd1",
+    "played_uci": "g4d1",
+    "best": "5...dxe5",
+    "best_uci": "d6e5",
+    "alternatives": [
+     {
+      "move": "5...dxe5",
+      "uci": "d6e5",
+      "win": 31.2
+     },
+     {
+      "move": "5...Le6",
+      "uci": "g4e6",
+      "win": 29.2
+     },
+     {
+      "move": "5...d5",
+      "uci": "d6d5",
+      "win": 19.2
+     }
+    ],
+    "best_line": "5...dxe5 6.Dxg4 Sc6 7.Dd1 Sf6 8.d3",
+    "reply_line": "6.Lxf7+ Ke7 7.Sd5#",
+    "threat_reply": "6.Lxf7+",
+    "win_before": 31.2,
+    "win_after": 0.0,
+    "drop": 31.2,
+    "class": "Patzer",
+    "glyph": "??",
+    "phase": "Eröffnung",
+    "motifs": [
+     "Partiezug lässt Matt zu",
+     "Bester Zug ist ein Schlagzug"
+    ]
+   }
+  ],
+  "puzzles": [
+   {
+    "ply": 7,
+    "move_no": 4,
+    "fen": "rn1qkbnr/ppp2ppp/3p4/4p3/2B1P1b1/2N2N2/PPPP1PPP/R1BQK2R b KQkq - 3 4",
+    "last_move": "b1c3",
+    "opponent_last": "4.Sc3",
+    "played": "4...g6",
+    "played_uci": "g7g6",
+    "best": "4...Sf6",
+    "best_uci": "g8f6",
+    "alternatives": [
+     {
+      "move": "4...Sf6",
+      "uci": "g8f6",
+      "win": 46.1
+     },
+     {
+      "move": "4...Sc6",
+      "uci": "b8c6",
+      "win": 46.0
+     },
+     {
+      "move": "4...Le7",
+      "uci": "f8e7",
+      "win": 44.7
+     }
+    ],
+    "best_line": "4...Sf6 5.h3 Lxf3 6.Dxf3 Sc6 7.Sd5",
+    "reply_line": "5.Sxe5 dxe5 6.Dxg4 Sf6 7.Dg3",
+    "threat_reply": "5.Sxe5",
+    "win_before": 46.1,
+    "win_after": 31.1,
+    "drop": 14.9,
+    "class": "Fehler",
+    "glyph": "?",
+    "phase": "Eröffnung",
+    "motifs": []
+   },
+   {
+    "ply": 9,
+    "move_no": 5,
+    "fen": "rn1qkbnr/ppp2p1p/3p2p1/4N3/2B1P1b1/2N5/PPPP1PPP/R1BQK2R b KQkq - 0 5",
+    "last_move": "f3e5",
+    "opponent_last": "5.Sxe5",
+    "played": "5...Lxd1",
+    "played_uci": "g4d1",
+    "best": "5...dxe5",
+    "best_uci": "d6e5",
+    "alternatives": [
+     {
+      "move": "5...dxe5",
+      "uci": "d6e5",
+      "win": 31.2
+     },
+     {
+      "move": "5...Le6",
+      "uci": "g4e6",
+      "win": 29.2
+     },
+     {
+      "move": "5...d5",
+      "uci": "d6d5",
+      "win": 19.2
+     }
+    ],
+    "best_line": "5...dxe5 6.Dxg4 Sc6 7.Dd1 Sf6 8.d3",
+    "reply_line": "6.Lxf7+ Ke7 7.Sd5#",
+    "threat_reply": "6.Lxf7+",
+    "win_before": 31.2,
+    "win_after": 0.0,
+    "drop": 31.2,
+    "class": "Patzer",
+    "glyph": "??",
+    "phase": "Eröffnung",
+    "motifs": [
+     "Partiezug lässt Matt zu",
+     "Bester Zug ist ein Schlagzug"
+    ]
+   }
+  ],
+  "evals": [
+   54.0,
+   52.6,
+   52.4,
+   52.6,
+   53.9,
+   51.5,
+   57.9,
+   53.9,
+   68.9,
+   68.8,
+   100.0,
+   100.0,
+   100.0,
+   100.0
+  ]
+ }
+}

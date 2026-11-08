@@ -1,0 +1,141 @@
+{
+ "depth": 12,
+ "color": "white",
+ "engine": "Stockfish 17.1",
+ "analysis": {
+  "color": "Weiß",
+  "white": "Paul Morphy",
+  "black": "Duke Karl / Count Isouard",
+  "result": "1-0",
+  "opening": "",
+  "moves": 33,
+  "accuracy": 95,
+  "counts": {
+   "Patzer": 1,
+   "Fehler": 0,
+   "Ungenauigkeit": 0
+  },
+  "moments": [
+   {
+    "ply": 28,
+    "move_no": 15,
+    "fen": "4kb1r/p2r1ppp/4qn2/1B2p1B1/4P3/1Q6/PPP2PPP/2KR4 w k - 2 15",
+    "last_move": "e7e6",
+    "opponent_last": "14...De6",
+    "played": "15.Lxd7+",
+    "played_uci": "b5d7",
+    "best": "15.Lxf6",
+    "best_uci": "g5f6",
+    "alternatives": [
+     {
+      "move": "15.Lxf6",
+      "uci": "g5f6",
+      "win": 91.0
+     },
+     {
+      "move": "15.Dxe6+",
+      "uci": "b3e6",
+      "win": 84.8
+     },
+     {
+      "move": "15.La4",
+      "uci": "b5a4",
+      "win": 79.1
+     }
+    ],
+    "best_line": "15.Lxf6 Ld6 16.Dxe6+ fxe6 17.Lxd7+ Kf7",
+    "reply_line": "15...Sxd7 16.Db7 f6 17.Dc8+ Ke7",
+    "threat_reply": "15...Sxd7",
+    "win_before": 91.0,
+    "win_after": 72.3,
+    "drop": 18.7,
+    "class": "Patzer",
+    "glyph": "??",
+    "phase": "Mittelspiel",
+    "motifs": [
+     "Beste Fortsetzung gewinnt etwa 8 Bauerneinheiten Material",
+     "Bester Zug ist ein Schlagzug"
+    ]
+   }
+  ],
+  "puzzles": [
+   {
+    "ply": 28,
+    "move_no": 15,
+    "fen": "4kb1r/p2r1ppp/4qn2/1B2p1B1/4P3/1Q6/PPP2PPP/2KR4 w k - 2 15",
+    "last_move": "e7e6",
+    "opponent_last": "14...De6",
+    "played": "15.Lxd7+",
+    "played_uci": "b5d7",
+    "best": "15.Lxf6",
+    "best_uci": "g5f6",
+    "alternatives": [
+     {
+      "move": "15.Lxf6",
+      "uci": "g5f6",
+      "win": 91.0
+     },
+     {
+      "move": "15.Dxe6+",
+      "uci": "b3e6",
+      "win": 84.8
+     },
+     {
+      "move": "15.La4",
+      "uci": "b5a4",
+      "win": 79.1
+     }
+    ],
+    "best_line": "15.Lxf6 Ld6 16.Dxe6+ fxe6 17.Lxd7+ Kf7",
+    "reply_line": "15...Sxd7 16.Db7 f6 17.Dc8+ Ke7",
+    "threat_reply": "15...Sxd7",
+    "win_before": 91.0,
+    "win_after": 72.3,
+    "drop": 18.7,
+    "class": "Patzer",
+    "glyph": "??",
+    "phase": "Mittelspiel",
+    "motifs": [
+     "Beste Fortsetzung gewinnt etwa 8 Bauerneinheiten Material",
+     "Bester Zug ist ein Schlagzug"
+    ]
+   }
+  ],
+  "evals": [
+   54.0,
+   52.6,
+   52.4,
+   52.6,
+   53.9,
+   53.2,
+   58.6,
+   58.2,
+   65.2,
+   64.6,
+   65.1,
+   61.6,
+   70.5,
+   70.2,
+   71.8,
+   70.8,
+   69.0,
+   70.4,
+   74.2,
+   77.6,
+   83.7,
+   86.0,
+   84.4,
+   84.5,
+   86.9,
+   88.2,
+   85.7,
+   88.4,
+   91.0,
+   72.3,
+   100.0,
+   100.0,
+   100.0,
+   100.0
+  ]
+ }
+}

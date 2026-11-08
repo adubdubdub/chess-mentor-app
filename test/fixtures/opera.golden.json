@@ -1,0 +1,214 @@
+{
+ "depth": 12,
+ "color": "black",
+ "engine": "Stockfish 17.1",
+ "analysis": {
+  "color": "Schwarz",
+  "white": "Paul Morphy",
+  "black": "Duke Karl / Count Isouard",
+  "result": "1-0",
+  "opening": "",
+  "moves": 33,
+  "accuracy": 86,
+  "counts": {
+   "Patzer": 0,
+   "Fehler": 0,
+   "Ungenauigkeit": 4
+  },
+  "moments": [
+   {
+    "ply": 5,
+    "move_no": 3,
+    "fen": "rnbqkbnr/ppp2ppp/3p4/4p3/3PP3/5N2/PPP2PPP/RNBQKB1R b KQkq - 0 3",
+    "last_move": "d2d4",
+    "opponent_last": "3.d4",
+    "played": "3...Lg4",
+    "played_uci": "c8g4",
+    "best": "3...exd4",
+    "best_uci": "e5d4",
+    "alternatives": [
+     {
+      "move": "3...exd4",
+      "uci": "e5d4",
+      "win": 46.8
+     },
+     {
+      "move": "3...Sc6",
+      "uci": "b8c6",
+      "win": 43.8
+     },
+     {
+      "move": "3...Sd7",
+      "uci": "b8d7",
+      "win": 42.5
+     }
+    ],
+    "best_line": "3...exd4 4.Dxd4 Sc6 5.Lb5 Ld7 6.Dc4",
+    "reply_line": "4.dxe5 Sc6 5.exd6 Sf6 6.Lb5",
+    "threat_reply": "4.dxe5",
+    "win_before": 46.8,
+    "win_after": 41.4,
+    "drop": 5.4,
+    "class": "Ungenauigkeit",
+    "glyph": "?!",
+    "phase": "Eröffnung",
+    "motifs": [
+     "Bester Zug ist ein Schlagzug"
+    ]
+   },
+   {
+    "ply": 7,
+    "move_no": 4,
+    "fen": "rn1qkbnr/ppp2ppp/3p4/4P3/4P1b1/5N2/PPP2PPP/RNBQKB1R b KQkq - 0 4",
+    "last_move": "d4e5",
+    "opponent_last": "4.dxe5",
+    "played": "4...Lxf3",
+    "played_uci": "g4f3",
+    "best": "4...Sc6",
+    "best_uci": "b8c6",
+    "alternatives": [
+     {
+      "move": "4...Sc6",
+      "uci": "b8c6",
+      "win": 41.8
+     },
+     {
+      "move": "4...Sd7",
+      "uci": "b8d7",
+      "win": 40.7
+     },
+     {
+      "move": "4...De7",
+      "uci": "d8e7",
+      "win": 37.6
+     }
+    ],
+    "best_line": "4...Sc6 5.exd6 Sf6 6.Lb5 Lxd6 7.h3",
+    "reply_line": "5.Dxf3 dxe5 6.Db3 Lc5 7.Lc4",
+    "threat_reply": "5.Dxf3",
+    "win_before": 41.8,
+    "win_after": 34.8,
+    "drop": 6.9,
+    "class": "Ungenauigkeit",
+    "glyph": "?!",
+    "phase": "Eröffnung",
+    "motifs": []
+   },
+   {
+    "ply": 11,
+    "move_no": 6,
+    "fen": "rn1qkbnr/ppp2ppp/8/4p3/2B1P3/5Q2/PPP2PPP/RNB1K2R b KQkq - 1 6",
+    "last_move": "f1c4",
+    "opponent_last": "6.Lc4",
+    "played": "6...Sf6",
+    "played_uci": "g8f6",
+    "best": "6...Df6",
+    "best_uci": "d8f6",
+    "alternatives": [
+     {
+      "move": "6...Df6",
+      "uci": "d8f6",
+      "win": 38.4
+     },
+     {
+      "move": "6...Dd7",
+      "uci": "d8d7",
+      "win": 37.7
+     },
+     {
+      "move": "6...De7",
+      "uci": "d8e7",
+      "win": 34.5
+     }
+    ],
+    "best_line": "6...Df6 7.Dh3 Sd7 8.Sc3 Lb4 9.a3",
+    "reply_line": "7.Db3 Lc5 8.Lxf7+ Ke7 9.O-O",
+    "threat_reply": "7.Db3",
+    "win_before": 38.4,
+    "win_after": 29.5,
+    "drop": 8.9,
+    "class": "Ungenauigkeit",
+    "glyph": "?!",
+    "phase": "Eröffnung",
+    "motifs": []
+   },
+   {
+    "ply": 19,
+    "move_no": 10,
+    "fen": "rn2kb1r/p3qppp/2p2n2/1N2p1B1/2B1P3/1Q6/PPP2PPP/R3K2R b KQkq - 0 10",
+    "last_move": "c3b5",
+    "opponent_last": "10.Sxb5",
+    "played": "10...cxb5",
+    "played_uci": "c6b5",
+    "best": "10...Db4+",
+    "best_uci": "e7b4",
+    "alternatives": [
+     {
+      "move": "10...Db4+",
+      "uci": "e7b4",
+      "win": 22.4
+     },
+     {
+      "move": "10...Sa6",
+      "uci": "b8a6",
+      "win": 22.0
+     },
+     {
+      "move": "10...a6",
+      "uci": "a7a6",
+      "win": 19.5
+     }
+    ],
+    "best_line": "10...Db4+ 11.Sc3 Dxb3 12.axb3 Lb4 13.f3",
+    "reply_line": "11.Lxb5+ Kd8 12.O-O-O+ Kc7 13.Td3",
+    "threat_reply": "11.Lxb5+",
+    "win_before": 22.4,
+    "win_after": 16.3,
+    "drop": 6.0,
+    "class": "Ungenauigkeit",
+    "glyph": "?!",
+    "phase": "Eröffnung",
+    "motifs": [
+     "Bester Zug gibt Schach"
+    ]
+   }
+  ],
+  "puzzles": [],
+  "evals": [
+   54.0,
+   52.6,
+   52.4,
+   52.6,
+   53.9,
+   53.2,
+   58.6,
+   58.2,
+   65.2,
+   64.6,
+   65.1,
+   61.6,
+   70.5,
+   70.2,
+   71.8,
+   70.8,
+   69.0,
+   70.4,
+   74.2,
+   77.6,
+   83.7,
+   86.0,
+   84.4,
+   84.5,
+   86.9,
+   88.2,
+   85.7,
+   88.4,
+   91.0,
+   72.3,
+   100.0,
+   100.0,
+   100.0,
+   100.0
+  ]
+ }
+}

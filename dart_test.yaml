@@ -1,0 +1,3 @@
+tags:
+  engine:
+    # braucht den Docker-Container chess-mentor (Stockfish des Telegram-Bots)

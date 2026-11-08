@@ -6,7 +6,8 @@ plugins {
 
 android {
     namespace = "de.lws20.chess_mentor"
-    compileSdk = flutter.compileSdkVersion
+    // 37: receive_sharing_intent 1.9 verlangt es
+    compileSdk = 37
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
