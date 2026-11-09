@@ -7,7 +7,6 @@ import '../analysis/judge.dart';
 import '../coach/coach_texts.dart';
 import '../data/game_store.dart';
 import 'app_scope.dart';
-import 'mistake_icons.dart';
 import 'strings.dart';
 
 /// Puzzles aus eigenen Fehlern: Stellung vor dem Fehler, besten Zug finden, Wiederholung nach Plan.
@@ -159,35 +158,55 @@ class _PuzzlePageState extends State<PuzzlePage> {
     _board!.updatePosition(_game(_pos), animate: false, resetPremove: true);
   }
 
-  /// Auswertung nach dem Puzzle: Gewinnchance, Folge des Partiezugs und Begründung (alles aus den Engine-Fakten).
+  /// Auswertung nach dem Puzzle in drei Blöcken: Gewinnchance je Zug, Folge des Partiezugs, Begründung.
   Widget _evaluation(Tr tr, CoachTexts coach) {
     final m = _p!.moment;
-    String pct(double v) => '${v.round()} %';
+    final theme = Theme.of(context);
     String diff(double v) => '${v >= 0 ? '+' : '−'}${v.abs().round()}';
-    final alts = m.alternatives.where((a) => a.uci != m.bestUci && m.winBefore - a.win < 5).toList();
-    final lines = <String>[
-      if (_ownWin != null && _ownSan != null)
-        tr.t(
-          '📊 Dein Zug $_ownSan: ${pct(_ownWin!)} (${diff(_ownWin! - m.winBefore)} Punkte gegenüber ${pct(m.winBefore)} vorher).',
-          '📊 Your move $_ownSan: ${pct(_ownWin!)} (${diff(_ownWin! - m.winBefore)} points vs. ${pct(m.winBefore)} before).',
-        ),
-      tr.t(
-        '📊 Bester Zug ${tr.san(m.best)}: ${pct(m.winBefore)}. Dein Partiezug ${tr.san(m.played)}: nur noch ${pct(m.winAfter)} (${diff(-m.drop)} Punkte).',
-        '📊 Best move ${tr.san(m.best)}: ${pct(m.winBefore)}. Your game move ${tr.san(m.played)}: only ${pct(m.winAfter)} (${diff(-m.drop)} points).',
+    Widget row(Color color, String label, double win, {bool bold = false}) => Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        children: [
+          Icon(Icons.circle, size: 12, color: color),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(label, style: bold ? const TextStyle(fontWeight: FontWeight.w600) : null),
+          ),
+          Text('${win.round()} %', style: const TextStyle(fontWeight: FontWeight.w600)),
+          SizedBox(
+            width: 44,
+            child: Text(win == m.winBefore ? '' : ' ${diff(win - m.winBefore)}', textAlign: TextAlign.end),
+          ),
+        ],
       ),
-      if (alts.isNotEmpty)
-        tr.t(
-          'Ebenfalls gut: ${alts.map((a) => '${tr.san(a.san)} (${pct(a.win)})').join(', ')}.',
-          'Also good: ${alts.map((a) => '${tr.san(a.san)} (${pct(a.win)})').join(', ')}.',
+    );
+    Widget heading(String text) => Padding(
+      padding: const EdgeInsets.only(top: 12, bottom: 2),
+      child: Text(text, style: theme.textTheme.labelLarge?.copyWith(color: theme.colorScheme.primary)),
+    );
+    final alts = m.alternatives.where((a) => a.uci != m.bestUci && m.winBefore - a.win < 5);
+    const green = Color(0xFF4CAF50), red = Color(0xFFD64545), grey = Color(0xFF9E9E9E);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        heading(tr.t('Gewinnchance', 'Winning chance')),
+        row(green, tr.t('Bester Zug ${tr.san(m.best)}', 'Best move ${tr.san(m.best)}'), m.winBefore, bold: true),
+        for (final a in alts)
+          row(green.withAlpha(150), tr.t('Auch gut ${tr.san(a.san)}', 'Also good ${tr.san(a.san)}'), a.win),
+        if (_ownWin != null && _ownSan != null) row(grey, tr.t('Dein Zug $_ownSan', 'Your move $_ownSan'), _ownWin!),
+        row(
+          red,
+          tr.t('Partiezug ${tr.san(m.played)}${m.mistake.glyph}', 'Game move ${tr.san(m.played)}${m.mistake.glyph}'),
+          m.winAfter,
         ),
-      if (m.replyLine.isNotEmpty)
-        tr.t(
-          '💥 Folge des Partiezugs: erwartet wird ${tr.san(m.replyLine)}.',
-          '💥 Consequence of the game move: expected is ${tr.san(m.replyLine)}.',
-        ),
-      '💡 ${coach.explanation(m)}',
-    ];
-    return Text(lines.join('\n\n'));
+        if (m.replyLine.isNotEmpty) ...[
+          heading(tr.t('Folge des Partiezugs', 'What follows the game move')),
+          Text(tr.san(m.replyLine)),
+        ],
+        heading(tr.t('Warum', 'Why')),
+        Text(coach.puzzleWhy(m)),
+      ],
+    );
   }
 
   String _date(String iso) {
@@ -337,20 +356,6 @@ class _PuzzlePageState extends State<PuzzlePage> {
                   const SizedBox(height: 8),
                 ],
                 Text(tr.t('Lösung: ${tr.san(m.bestLine)}', 'Solution: ${tr.san(m.bestLine)}')),
-                const SizedBox(height: 4),
-                Text.rich(
-                  TextSpan(
-                    children: [
-                      mistakeSpan(m.mistake),
-                      TextSpan(
-                        text: tr.t(
-                          ' In der Partie hattest du ${tr.san(m.played)}${m.mistake.glyph} gespielt.',
-                          ' In the game you played ${tr.san(m.played)}${m.mistake.glyph}.',
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
                 const SizedBox(height: 8),
                 _evaluation(tr, coach),
                 const SizedBox(height: 8),

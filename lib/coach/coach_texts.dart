@@ -146,7 +146,7 @@ class CoachTexts {
   }
 
   /// Warum der beste Zug stark ist: Schlagen, Schach, Gabel, Rettung, verhinderte Drohung, Materialgewinn.
-  String whyBestGood(Moment m) {
+  String whyBestGood(Moment m, {bool standing = true}) {
     final pos = _start(m);
     final b = mark('b', tr.san(m.best));
     final parts = <String>[];
@@ -169,9 +169,13 @@ class CoachTexts {
         );
       }
     }
-    parts.add(tr.t('Danach: ${_standing(m.winBefore)}.', 'After that: ${_standing(m.winBefore)}.'));
+    if (standing) parts.add(tr.t('Danach: ${_standing(m.winBefore)}.', 'After that: ${_standing(m.winBefore)}.'));
     return parts.join(' ');
   }
+
+  /// Kurze Begründung für die Puzzle-Auswertung: Problem des Partiezugs und Stärke des besten Zugs, ohne Prozentwerte
+  /// (die stehen in der Übersicht darüber).
+  String puzzleWhy(Moment m) => plain('${_playedProblems(m).join(' ')} ${whyBestGood(m, standing: false)}');
 
   /// Dein eigener Versuch in der Besprechung (grau): fast so gut wie der beste Zug oder was daran hakt.
   String aboutAttempt(Moment m, List<String> line, Verdict verdict, double win) {
