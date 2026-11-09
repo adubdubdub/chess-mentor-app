@@ -162,7 +162,7 @@ class _PuzzlePageState extends State<PuzzlePage> {
   Widget _evaluation(Tr tr, CoachTexts coach) {
     final m = _p!.moment;
     final theme = Theme.of(context);
-    String diff(double v) => '${v >= 0 ? '+' : '−'}${v.abs().round()}';
+    String diff(double v) => '${v >= 0 ? '+' : '−'}${v.abs().round()} %';
     Widget row(Color color, String label, double win, {bool bold = false}) => Padding(
       padding: const EdgeInsets.symmetric(vertical: 3),
       child: Row(
@@ -174,7 +174,7 @@ class _PuzzlePageState extends State<PuzzlePage> {
           ),
           Text('${win.round()} %', style: const TextStyle(fontWeight: FontWeight.w600)),
           SizedBox(
-            width: 44,
+            width: 64,
             child: Text(win == m.winBefore ? '' : ' ${diff(win - m.winBefore)}', textAlign: TextAlign.end),
           ),
         ],
