@@ -175,12 +175,20 @@ class CoachTexts {
 
   /// Kurze Begründung für die Puzzle-Auswertung: Problem des Partiezugs und Stärke des besten Zugs, ohne Prozentwerte
   /// (die stehen in der Übersicht darüber).
-  String puzzleWhy(Moment m) => plain('${_playedProblems(m).join(' ')} ${whyBestGood(m, standing: false)}')
-      // Der Hinweis auf die Variantenansicht gilt nur in der Besprechung, nicht im Puzzle.
-      .replaceAll(
-        RegExp(r' (Blättere oben durch die Variante, dann siehst du, wie|Step through the line above to see how)\.'),
-        '.',
-      );
+  String puzzleWhy(Moment m) {
+    final bad = plain(_playedProblems(m).join(' '))
+        // Der Hinweis auf die Variantenansicht gilt nur in der Besprechung, nicht im Puzzle.
+        .replaceAll(
+          RegExp(r' (Blättere oben durch die Variante, dann siehst du, wie|Step through the line above to see how)\.'),
+          '.',
+        )
+        .replaceAll('Am Ende der Variante', 'Am Ende der Partievariante')
+        .replaceAll('At the end of the line', 'At the end of the game line');
+    final good = plain(whyBestGood(m, standing: false))
+        .replaceAll('Am Ende der Variante', 'Am Ende der Lösung')
+        .replaceAll('At the end of the line', 'At the end of the solution');
+    return '$bad $good';
+  }
 
   /// Dein eigener Versuch in der Besprechung (grau): fast so gut wie der beste Zug oder was daran hakt.
   String aboutAttempt(Moment m, List<String> line, Verdict verdict, double win) {

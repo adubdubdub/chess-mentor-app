@@ -97,7 +97,7 @@ class _PuzzlePageState extends State<PuzzlePage> {
     final tr = Tr.of(context);
     final scope = AppScope.of(context);
     final pos = _pos;
-    final san = tr.san(pos.makeSan(move).$2);
+    final san = tr.san(numbered(pos, [move]));
     setState(() => _judging = true);
     _board!.updatePosition(_game(pos.play(move), lastMove: move));
     final (verdict, win, _) = await judgeMove(
@@ -112,7 +112,7 @@ class _PuzzlePageState extends State<PuzzlePage> {
       case Verdict.best || Verdict.good:
         await _finish(
           true,
-          own: (san, win),
+          own: (numbered(pos, [move]), win),
           verdict == Verdict.best
               ? tr.t('✅ $san – genau der stärkste Zug!', '✅ $san – exactly the strongest move!')
               : tr.t('✅ $san – auch gut spielbar!', '✅ $san – also playable!'),
@@ -120,7 +120,7 @@ class _PuzzlePageState extends State<PuzzlePage> {
       case Verdict.played || Verdict.weak when _tries >= 1:
         await _finish(
           false,
-          own: (san, win),
+          own: (numbered(pos, [move]), win),
           tr.t('❌ $san ist leider auch nicht besser.', '❌ Unfortunately $san is not better either.'),
         );
       case Verdict.played || Verdict.weak:
@@ -162,7 +162,12 @@ class _PuzzlePageState extends State<PuzzlePage> {
   Widget _evaluation(Tr tr, CoachTexts coach) {
     final m = _p!.moment;
     final theme = Theme.of(context);
-    String diff(double v) => '${v >= 0 ? '+' : '−'}${v.abs().round()} %';
+    // Differenz aus den angezeigten (gerundeten) Werten, sonst passen Zahlen und Differenz nicht zusammen.
+    String diff(double v) {
+      final d = v.round() - m.winBefore.round();
+      return d == 0 ? '±0 %' : '${d > 0 ? '+' : '−'}${d.abs()} %';
+    }
+
     Widget row(Color color, String label, double win, {bool bold = false}) => Padding(
       padding: const EdgeInsets.symmetric(vertical: 3),
       child: Row(
@@ -173,10 +178,7 @@ class _PuzzlePageState extends State<PuzzlePage> {
             child: Text(label, style: bold ? const TextStyle(fontWeight: FontWeight.w600) : null),
           ),
           Text('${win.round()} %', style: const TextStyle(fontWeight: FontWeight.w600)),
-          SizedBox(
-            width: 64,
-            child: Text(win == m.winBefore ? '' : ' ${diff(win - m.winBefore)}', textAlign: TextAlign.end),
-          ),
+          SizedBox(width: 64, child: Text(diff(win), textAlign: TextAlign.end)),
         ],
       ),
     );
@@ -186,19 +188,24 @@ class _PuzzlePageState extends State<PuzzlePage> {
     );
     final alts = m.alternatives.where((a) => a.uci != m.bestUci && m.winBefore - a.win < 5);
     const green = Color(0xFF4CAF50), red = Color(0xFFD64545), grey = Color(0xFF9E9E9E);
+    // Übrige Züge nach Gewinnchance absteigend, damit die Tabelle durchgehend sortiert ist.
+    final others = <(Color, String, double)>[
+      for (final a in alts)
+        (green.withAlpha(150), tr.t('Auch gut ${tr.san(a.san)}', 'Also good ${tr.san(a.san)}'), a.win),
+      if (_ownWin != null && _ownSan != null)
+        (grey, tr.t('Dein Zug ${tr.san(_ownSan!)}', 'Your move ${tr.san(_ownSan!)}'), _ownWin!),
+      (
+        red,
+        tr.t('Partiezug ${tr.san(m.played)}${m.mistake.glyph}', 'Game move ${tr.san(m.played)}${m.mistake.glyph}'),
+        m.winAfter,
+      ),
+    ]..sort((x, y) => y.$3.compareTo(x.$3));
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         heading(tr.t('Gewinnchance', 'Winning chance')),
         row(green, tr.t('Bester Zug ${tr.san(m.best)}', 'Best move ${tr.san(m.best)}'), m.winBefore, bold: true),
-        for (final a in alts)
-          row(green.withAlpha(150), tr.t('Auch gut ${tr.san(a.san)}', 'Also good ${tr.san(a.san)}'), a.win),
-        if (_ownWin != null && _ownSan != null) row(grey, tr.t('Dein Zug $_ownSan', 'Your move $_ownSan'), _ownWin!),
-        row(
-          red,
-          tr.t('Partiezug ${tr.san(m.played)}${m.mistake.glyph}', 'Game move ${tr.san(m.played)}${m.mistake.glyph}'),
-          m.winAfter,
-        ),
+        for (final r in others) row(r.$1, r.$2, r.$3),
         if (m.replyLine.isNotEmpty) ...[
           heading(tr.t('Folge des Partiezugs', 'What follows the game move')),
           Text(tr.san(m.replyLine)),
