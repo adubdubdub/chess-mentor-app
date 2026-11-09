@@ -79,7 +79,7 @@ flowchart LR
     B --> C{"Urteil"}
     C -- "falsch, 1. Versuch" --> D["🤔 Hinweis mit<br/>Gewinnchance deines Zugs"]
     C -- "richtig oder 2. Fehlversuch<br/>oder Lösung" --> E["📊 Auswertung"]
-    E --> F["Gewinnchance:<br/>vorher · dein Zug · Partiezug"]
+    E --> F["Tabelle Gewinnchance:<br/>bester · gleichwertige · dein Zug · Partiezug"]
     E --> G["💥 Folge des Partiezugs<br/>+ ebenfalls gute Züge"]
     E --> H["💡 Warum-Satz<br/>aus Motiven"]
 ```
