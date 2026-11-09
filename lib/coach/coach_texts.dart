@@ -112,7 +112,8 @@ class CoachTexts {
   Position _start(Moment m) => Chess.fromSetup(Setup.parseFen(m.fen));
 
   /// Warum der Partiezug nicht gut war: was der Gegner darauf macht und was es kostet.
-  String whyPlayedBad(Moment m) => [..._playedProblems(m), _change(m.winBefore, m.winAfter)].join(' ');
+  String whyPlayedBad(Moment m, {bool withChange = true}) =>
+      [..._playedProblems(m), if (withChange) _change(m.winBefore, m.winAfter)].join(' ');
 
   /// Kurzfassung für die Liste aller markierten Züge: der wichtigste Grund in einem Satz.
   String shortWhy(Moment m) => _playedProblems(m).first;
@@ -191,7 +192,7 @@ class CoachTexts {
   }
 
   /// Dein eigener Versuch in der Besprechung (grau): fast so gut wie der beste Zug oder was daran hakt.
-  String aboutAttempt(Moment m, List<String> line, Verdict verdict, double win) {
+  String aboutAttempt(Moment m, List<String> line, Verdict verdict, double win, {bool standing = true}) {
     final pos = _start(m);
     if (line.isEmpty) return '';
     final move = cu.legalUci(pos, line.first);
@@ -204,7 +205,7 @@ class CoachTexts {
     } else {
       parts.addAll(_problems(pos, line, a, allowsMate: win < 3));
     }
-    parts.add(tr.t('Danach: ${_standing(win)}.', 'After that: ${_standing(win)}.'));
+    if (standing) parts.add(tr.t('Danach: ${_standing(win)}.', 'After that: ${_standing(win)}.'));
     return parts.join(' ');
   }
 

@@ -7,6 +7,7 @@ import '../analysis/chess_utils.dart';
 import '../analysis/judge.dart';
 import '../coach/coach_texts.dart';
 import 'app_scope.dart';
+import 'evaluation_table.dart';
 import 'line_viewer.dart';
 import 'mistake_icons.dart';
 import 'strings.dart';
@@ -296,27 +297,32 @@ List<LineOption> lineOptions(Tr tr, Moment m, {(Verdict, double, List<String>)? 
     LineOption(label: tr.t('Dein Versuch', 'Your try'), color: attemptColor, moves: attempt.$3, win: attempt.$2),
 ];
 
-/// Erklärung in farbigen Abschnitten: warum der Partiezug schwach ist, warum der beste Zug stark ist, dein Versuch.
+/// Erklärung: Gewinnchance-Tabelle, dann farbige Abschnitte (warum der Partiezug schwach ist, warum der beste Zug stark
+/// ist, dein Versuch). Die Prozentwerte stehen nur in der Tabelle.
 List<Widget> explanationSections(CoachTexts coach, Moment m, {(Verdict, double, List<String>)? attempt}) {
   final tr = coach.tr;
   final p = CoachTexts.mark('p', tr.san(m.played));
   final b = CoachTexts.mark('b', tr.san(m.best));
+  final pos = Chess.fromSetup(Setup.parseFen(m.fen));
+  final first = attempt == null || attempt.$3.isEmpty ? null : legalUci(pos, attempt.$3.first);
   return [
+    EvaluationTable(moment: m, tr: tr, ownSan: first == null ? null : numbered(pos, [first]), ownWin: attempt?.$2),
+    const SizedBox(height: 8),
     ColoredSection(
       color: playedColor,
       title: tr.t('Warum $p nicht gut war', 'Why $p was not good'),
-      text: coach.whyPlayedBad(m),
+      text: coach.whyPlayedBad(m, withChange: false),
     ),
     ColoredSection(
       color: bestColor,
       title: tr.t('Warum $b stärker ist', 'Why $b is stronger'),
-      text: coach.whyBestGood(m),
+      text: coach.whyBestGood(m, standing: false),
     ),
     if (attempt != null && attempt.$3.isNotEmpty)
       ColoredSection(
         color: attemptColor,
         title: tr.t('Dein Versuch', 'Your try'),
-        text: coach.aboutAttempt(m, attempt.$3, attempt.$1, attempt.$2),
+        text: coach.aboutAttempt(m, attempt.$3, attempt.$1, attempt.$2, standing: false),
       ),
     Text(
       tr.t(

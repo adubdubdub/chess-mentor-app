@@ -6,6 +6,7 @@ import '../coach/coach_texts.dart';
 import '../data/game_store.dart';
 import '../engine/analysis_service.dart';
 import 'app_scope.dart';
+import 'evaluation_table.dart';
 import 'home_page.dart' show askColor;
 import 'line_viewer.dart';
 import 'mistake_icons.dart';
@@ -124,11 +125,11 @@ class _GamePageState extends State<GamePage> {
               ),
               const SizedBox(height: 6),
               Text(
-                '${tr.mistake(m.mistake)} · ${tr.phase(m.phase)} · ${tr.winChance} '
-                '${m.winBefore.round()} % → ${m.winAfter.round()} %'
+                '${tr.mistake(m.mistake)} · ${tr.phase(m.phase)}'
                 '${a.moments.any((k) => k.ply == m.ply) ? ' · 🎓' : ''}',
                 style: theme.textTheme.bodySmall,
               ),
+              EvaluationTable(moment: m, tr: tr),
               const SizedBox(height: 10),
               MoveText(CoachTexts(tr).shortWhy(m)),
               const SizedBox(height: 16),
@@ -591,7 +592,6 @@ class MomentPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final tr = Tr.of(context);
     final m = moment;
-    final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
         title: Row(
@@ -615,12 +615,7 @@ class MomentPage extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                ...explanationSections(CoachTexts(tr), m),
-                const SizedBox(height: 12),
-                Text(tr.alternatives, style: theme.textTheme.titleSmall),
-                for (final alt in m.alternatives) Text('${tr.san(alt.san)}  ${alt.win.toStringAsFixed(0)} %'),
-              ],
+              children: [...explanationSections(CoachTexts(tr), m)],
             ),
           ),
         ],

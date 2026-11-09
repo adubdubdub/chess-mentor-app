@@ -38,7 +38,7 @@ chess-mentor-app/
 │   ├── puzzles/         Wiederholungsplan und vorausgeplante Erinnerungen
 │   ├── engine/          Stockfish auf dem Handy (kleines/großes Netz), Netz-Download, Analyse-Warteschlange
 │   ├── data/            Partien in SQLite, Einstellungen
-│   ├── ui/              Partienliste, Import, Partie- und Momentansicht, Engine-Seite, Texte DE/EN
+│   ├── ui/              Partienliste, Import, Partie- und Momentansicht, Gewinnchance-Tabelle, Engine-Seite, Texte DE/EN
 │   └── main.dart
 ├── test/                Unit-Tests und Vergleich mit dem Bot (fixtures: gemeinfreie Partien + Bot-Referenz)
 ├── android/             Android-Projekt, Speichergrenzen in gradle.properties
@@ -84,7 +84,7 @@ flowchart LR
     E --> H["💡 Warum-Satz<br/>aus Motiven"]
 ```
 
-Das Muster stammt vom Telegram-Bot, dort ergänzt Claude die Erklärung. Abstimmung der beiden Projekte:
+Die Gewinnchance-Tabelle (`lib/ui/evaluation_table.dart`) ist ein gemeinsames Bauteil: Puzzle, Besprechung und Partieansicht zeigen dieselbe Tabelle (bester Zug zuerst, Rest nach Gewinnchance sortiert, Differenz aus gerundeten Werten, Züge mit Zugnummer). Die Prozentwerte stehen nur dort, nicht noch einmal im Fließtext. Das Muster stammt vom Telegram-Bot, dort ergänzt Claude die Erklärung. Abstimmung der beiden Projekte:
 Brain-Notiz „Schach-Mentor – Bot und App abgleichen“.
 
 ## ⚙️ Entwicklung

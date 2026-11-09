@@ -7,6 +7,7 @@ import '../analysis/judge.dart';
 import '../coach/coach_texts.dart';
 import '../data/game_store.dart';
 import 'app_scope.dart';
+import 'evaluation_table.dart';
 import 'strings.dart';
 
 /// Puzzles aus eigenen Fehlern: Stellung vor dem Fehler, besten Zug finden, Wiederholung nach Plan.
@@ -162,50 +163,14 @@ class _PuzzlePageState extends State<PuzzlePage> {
   Widget _evaluation(Tr tr, CoachTexts coach) {
     final m = _p!.moment;
     final theme = Theme.of(context);
-    // Differenz aus den angezeigten (gerundeten) Werten, sonst passen Zahlen und Differenz nicht zusammen.
-    String diff(double v) {
-      final d = v.round() - m.winBefore.round();
-      return d == 0 ? '±0 %' : '${d > 0 ? '+' : '−'}${d.abs()} %';
-    }
-
-    Widget row(Color color, String label, double win, {bool bold = false}) => Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3),
-      child: Row(
-        children: [
-          Icon(Icons.circle, size: 12, color: color),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(label, style: bold ? const TextStyle(fontWeight: FontWeight.w600) : null),
-          ),
-          Text('${win.round()} %', style: const TextStyle(fontWeight: FontWeight.w600)),
-          SizedBox(width: 64, child: Text(diff(win), textAlign: TextAlign.end)),
-        ],
-      ),
-    );
     Widget heading(String text) => Padding(
       padding: const EdgeInsets.only(top: 12, bottom: 2),
       child: Text(text, style: theme.textTheme.labelLarge?.copyWith(color: theme.colorScheme.primary)),
     );
-    final alts = m.alternatives.where((a) => a.uci != m.bestUci && m.winBefore - a.win < 5);
-    const green = Color(0xFF4CAF50), red = Color(0xFFD64545), grey = Color(0xFF9E9E9E);
-    // Übrige Züge nach Gewinnchance absteigend, damit die Tabelle durchgehend sortiert ist.
-    final others = <(Color, String, double)>[
-      for (final a in alts)
-        (green.withAlpha(150), tr.t('Auch gut ${tr.san(a.san)}', 'Also good ${tr.san(a.san)}'), a.win),
-      if (_ownWin != null && _ownSan != null)
-        (grey, tr.t('Dein Zug ${tr.san(_ownSan!)}', 'Your move ${tr.san(_ownSan!)}'), _ownWin!),
-      (
-        red,
-        tr.t('Partiezug ${tr.san(m.played)}${m.mistake.glyph}', 'Game move ${tr.san(m.played)}${m.mistake.glyph}'),
-        m.winAfter,
-      ),
-    ]..sort((x, y) => y.$3.compareTo(x.$3));
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        heading(tr.t('Gewinnchance', 'Winning chance')),
-        row(green, tr.t('Bester Zug ${tr.san(m.best)}', 'Best move ${tr.san(m.best)}'), m.winBefore, bold: true),
-        for (final r in others) row(r.$1, r.$2, r.$3),
+        EvaluationTable(moment: m, tr: tr, ownSan: _ownSan, ownWin: _ownWin),
         if (m.replyLine.isNotEmpty) ...[
           heading(tr.t('Folge des Partiezugs', 'What follows the game move')),
           Text(tr.san(m.replyLine)),
