@@ -164,6 +164,7 @@ class _PuzzlePageState extends State<PuzzlePage> {
     final m = _p!.moment;
     String pct(double v) => '${v.round()} %';
     String diff(double v) => '${v >= 0 ? '+' : '−'}${v.abs().round()}';
+    final alts = m.alternatives.where((a) => a.uci != m.bestUci && m.winBefore - a.win < 5).toList();
     final lines = <String>[
       if (_ownWin != null && _ownSan != null)
         tr.t(
@@ -174,6 +175,11 @@ class _PuzzlePageState extends State<PuzzlePage> {
         '📊 Bester Zug ${tr.san(m.best)}: ${pct(m.winBefore)}. Dein Partiezug ${tr.san(m.played)}: nur noch ${pct(m.winAfter)} (${diff(-m.drop)} Punkte).',
         '📊 Best move ${tr.san(m.best)}: ${pct(m.winBefore)}. Your game move ${tr.san(m.played)}: only ${pct(m.winAfter)} (${diff(-m.drop)} points).',
       ),
+      if (alts.isNotEmpty)
+        tr.t(
+          'Ebenfalls gut: ${alts.map((a) => '${tr.san(a.san)} (${pct(a.win)})').join(', ')}.',
+          'Also good: ${alts.map((a) => '${tr.san(a.san)} (${pct(a.win)})').join(', ')}.',
+        ),
       if (m.replyLine.isNotEmpty)
         tr.t(
           '💥 Folge des Partiezugs: erwartet wird ${tr.san(m.replyLine)}.',
