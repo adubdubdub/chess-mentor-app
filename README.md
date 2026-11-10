@@ -1,10 +1,10 @@
 # ♟️ Schach-Mentor (Android-App)
 
 Stockfish rechnet, du lernst: Android-App, die eigene Schachpartien auf dem Handy analysiert, Fehler im Dialog bespricht
-und als Puzzles mit Wiederholung einübt. Ohne eigenen Server und ohne Pflicht-Schlüssel. Abgeleitet vom Telegram-Bot
-[chess-mentor](https://github.com/adubdubdub/chess-mentor).
+und als Puzzles mit Wiederholung einübt. Ohne eigenen Server und ohne Pflicht-Schlüssel. Entstanden aus einem privaten
+Telegram-Bot, den die App ab Ende 2026 ersetzt.
 
-> **Stand: Phase 3.** Partien kommen per Teilen, Einfügen oder Datei in die App. Stockfish analysiert sie auf dem Handy
+> **Stand: Phase 3 (10.11.2026), nächster Schritt 1 der Roadmap.** Partien kommen per Teilen, Einfügen oder Datei in die App. Stockfish analysiert sie auf dem Handy
 > wie der Telegram-Bot: Genauigkeit, Fehler-Einstufung, Verlauf und Schlüsselmomente mit Pfeilen und Varianten.
 > Dazu kommen die sokratische Besprechung am Brett und Puzzles aus eigenen Fehlern mit Wiederholung und Erinnerung.
 
@@ -16,7 +16,8 @@ flowchart LR
     L["☁️ Lichess-API<br/>Online-Partien"] -.-> M
     M(["♟️ Schach-Mentor<br/>Stockfish auf dem Handy"]) --> R["💬 Besprechung"]
     M --> P["🧩 Puzzles"]
-    M -.-> C["🤖 ChatGPT, Gemini, Claude<br/>optional"]
+    M -.-> C["🤖 KI-Texte optional<br/>eigener Schlüssel"]
+    M -.-> H["🔒 Claude Code im Heimnetz<br/>nur eigenes Handy"]
     M -.-> S["📚 Lichess-Studie<br/>optional"]
 ```
 
@@ -25,8 +26,10 @@ Texte entstehen in drei Stufen, nur die erste ist Pflicht:
 | Stufe | Wie | Kosten |
 |---|---|---|
 | Textbausteine | aus Engine-Fakten und Motiven, offline | keine |
-| Übergabe | fertiger Prompt per Teilen an eine Chat-App, Stockfish prüft dort nichts mehr | keine |
-| Eigener Schlüssel | App fragt den Anbieter des Nutzers direkt | je nach Anbieter |
+| Heimserver | Claude Code auf dem eigenen Server, nur im Heimnetz (geplant) | eigenes Abo |
+| Eigener Schlüssel | App fragt den Anbieter des Nutzers direkt (geplant) | je nach Anbieter |
+
+Jeder KI-Text wird gegen die Engine-Fakten geprüft. Nennt er einen Zug, der dort nicht steht, gelten die Textbausteine.
 
 ## 🗂️ Aufbau
 
@@ -118,9 +121,16 @@ Gebaut wird nur `arm64-v8a` (`android.injected.build.abi` in `android/gradle.pro
 - [x] **Phase 1:** PGN-Eingang, Analyse (Vergleich mit dem Bot, beide Netze)
 - [x] **Phase 2:** Besprechung am Brett (Frage, Zug, Prüfung, Tipp, Auflösung, Lernpunkt)
 - [x] **Phase 3:** Puzzles mit Wiederholung (1 · 3 · 7 · 21 · 60 Tage), tägliche Erinnerung ohne Server, Auswertung mit Gewinnchance, Folge und Begründung
-- [ ] **Phase 4:** Lichess-Abruf und Studien-Export
-- [ ] **Phase 5:** KI-Übergabe und eigener Schlüssel
-- [ ] **Phase 6:** Veröffentlichung als APK, später F-Droid
+- [ ] **Schritt 1:** Aufräumen: App-ID `io.github.adubdubdub.schachmentor`, Signierschlüssel, kein `testOnly`, GitHub Actions
+- [ ] **Schritt 2:** Puzzles: Versuche speichern, Aufstieg nur im ersten Versuch ohne Tipp, zweizügige Puzzles
+- [ ] **Schritt 3:** KI-Texte: Heimserver (Claude Code) und eigener Schlüssel, mit Zugprüfung
+- [ ] **Schritt 4:** Export/Import, Übernahme der Bot-Daten
+- [ ] **Schritt 5:** Abruf per Benutzername (Lichess, Chess.com), mehrere Partien je PGN
+- [ ] **Schritt 6:** Schwächenprofil und Wochenfokus
+- [ ] **Schritt 7:** Erste Weitergabe an Familie und Freunde (GitHub Releases, Obtainium)
+- [ ] **Schritt 8:** F-Droid: Übersetzungsdateien, Barrierefreiheit, Datenschutzhinweis
+
+iOS ist zurückgestellt.
 
 ## 📜 Lizenz
 
