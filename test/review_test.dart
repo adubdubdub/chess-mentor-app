@@ -62,7 +62,8 @@ void main() {
           .where((e) => pos.board.pieceAt(e.key)?.role.name == 'queen')
           .expand((e) => e.value.squares.map((to) => '${e.key.name}${to.name}'))
           .first;
-      final (verdict, win) = await judgeMove(legal, queenBlunder, engine, depth: 12);
+      final (verdict, win, line) = await judgeMove(legal, queenBlunder, engine, depth: 12);
+      expect(line.first, queenBlunder);
       expect(verdict, Verdict.weak);
       expect(win, lessThan(legal.winBefore - 5));
     },
@@ -88,17 +89,39 @@ void main() {
               reason: '${m.played}: "$text" nennt das Zielfeld',
             );
           }
-          final explanation = coach.explanation(m);
-          expect(explanation, contains(coach.tr.san(m.played)));
-          expect(explanation, contains(coach.tr.san(m.best)));
-          // Der beste Zug steht nur einmal da, nicht noch einmal am Anfang der Fortsetzung
-          expect(coach.tr.san(m.best).allMatches(explanation).length, 1, reason: explanation);
+          final bad = coach.whyPlayedBad(m), good = coach.whyBestGood(m);
+          expect(bad, contains(CoachTexts.mark('p', coach.tr.san(m.played))), reason: bad);
+          expect(bad.contains(coach.tr.san(m.best)), isFalse, reason: bad);
+          expect(good, contains(CoachTexts.mark('b', coach.tr.san(m.best))), reason: good);
+          expect(CoachTexts.plain(good).contains('«'), isFalse);
+          // Varianten zum Durchklicken: beginnen mit Partiezug bzw. bestem Zug und sind länger als ein Zug
+          expect(m.playedMoves.first, m.playedUci);
+          expect(m.bestMoves.first, m.bestUci);
+          expect(m.bestMoves.length, greaterThan(1));
         }
+        // Alle markierten Züge: so viele wie gezählt, jeweils mit Kurzbegründung
+        expect(a.flagged.length, a.counts.values.reduce((x, y) => x + y));
+        for (final m in a.flagged) {
+          expect(coach.shortWhy(m), isNotEmpty);
+        }
+        expect(GameAnalysis.fromJson(a.toJson()).flagged.length, a.flagged.length);
         expect(coach.summary(a), isNotEmpty);
         expect(coach.learningPoint(a), isNotEmpty);
       }
     }, skip: skip);
   }
+
+  test('Erklärung der Légal-Falle: Partiezug lässt Matt zu, bester Zug schlägt', () {
+    final coach = CoachTexts(const Tr(true));
+    final legal = analyses['legal']!.moments.firstWhere((m) => m.ply == 9);
+    expect(coach.whyPlayedBad(legal), contains('mattsetzen'));
+    expect(coach.whyBestGood(legal), contains('schlägt'));
+    // Fehlender Materialgewinn wird beim Partiezug als verpasste Chance genannt
+    final white = analyses['opera_white']!.moments.where((m) => m.motifs.any((x) => x.code == 'wins_material'));
+    for (final m in white) {
+      expect(coach.whyPlayedBad(m), isNot(contains('leichtere Spiel')), reason: coach.whyPlayedBad(m));
+    }
+  }, skip: skip);
 
   test('Tipp nennt Figur und Art des besten Zugs', () {
     final coach = CoachTexts(const Tr(true));
