@@ -4,7 +4,7 @@ Stockfish rechnet, du lernst: Android-App, die eigene Schachpartien auf dem Hand
 und als Puzzles mit Wiederholung einübt. Ohne eigenen Server und ohne Pflicht-Schlüssel. Entstanden aus einem privaten
 Telegram-Bot, den die App ab Ende 2026 ersetzt.
 
-> **Stand: Phase 3 (10.11.2026), nächster Schritt 2 der Roadmap.** Partien kommen per Teilen, Einfügen oder Datei in die App. Stockfish analysiert sie auf dem Handy
+> **Stand: Phase 3 (10.11.2026), nächster Schritt 3 der Roadmap.** Partien kommen per Teilen, Einfügen oder Datei in die App. Stockfish analysiert sie auf dem Handy
 > wie der Telegram-Bot: Genauigkeit, Fehler-Einstufung, Verlauf und Schlüsselmomente mit Pfeilen und Varianten.
 > Dazu kommen die sokratische Besprechung am Brett und Puzzles aus eigenen Fehlern mit Wiederholung und Erinnerung.
 
@@ -122,7 +122,7 @@ Gebaut wird nur `arm64-v8a` (`android.injected.build.abi` in `android/gradle.pro
 - [x] **Phase 2:** Besprechung am Brett (Frage, Zug, Prüfung, Tipp, Auflösung, Lernpunkt)
 - [x] **Phase 3:** Puzzles mit Wiederholung (1 · 3 · 7 · 21 · 60 Tage), tägliche Erinnerung ohne Server, Auswertung mit Gewinnchance, Folge und Begründung
 - [x] **Schritt 1:** Aufräumen: App-ID `io.github.adubdubdub.schachmentor`, Signierschlüssel, kein `testOnly`, GitHub Actions (Workflow-Datei liegt noch lokal, Push braucht den `workflow`-Scope)
-- [ ] **Schritt 2:** Puzzles: Versuche speichern ✅, Aufstieg nur im ersten Versuch ohne Tipp ✅, zweizügige Puzzles (offen)
+- [x] **Schritt 2:** Puzzles: Versuche speichern ✅, Aufstieg nur im ersten Versuch ohne Tipp ✅, zweizügige Puzzles ✅ (Folgezug wird beim Lösen auf Eindeutigkeit geprüft, Abstand ≥ 15 Prozentpunkte)
 - [ ] **Schritt 3:** KI-Texte: Heimserver (Claude Code) und eigener Schlüssel, mit Zugprüfung
 - [ ] **Schritt 4:** Export/Import, Übernahme der Bot-Daten
 - [ ] **Schritt 5:** Abruf per Benutzername (Lichess, Chess.com), mehrere Partien je PGN

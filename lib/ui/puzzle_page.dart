@@ -6,6 +6,7 @@ import '../analysis/chess_utils.dart';
 import '../analysis/judge.dart';
 import '../coach/coach_texts.dart';
 import '../data/game_store.dart';
+import '../puzzles/follow_up.dart';
 import '../puzzles/schedule.dart';
 import 'app_scope.dart';
 import 'evaluation_table.dart';
@@ -26,6 +27,14 @@ class _PuzzlePageState extends State<PuzzlePage> {
   int _tries = 0;
   bool _hint = false;
   bool _judging = false;
+
+  /// Zweizügiges Puzzle: Folgezug nach der Gegnerantwort, Stellung davor, erster eigener Zug (für die Auswertung).
+  FollowUp? _follow;
+  Position? _stepPos;
+  (String, double)? _ownFirst;
+
+  /// Erster Zug war eine gute Alternative zum empfohlenen Zug.
+  bool _alt = false;
 
   /// Nach dem Ergebnis: neue Fälligkeit bzw. null = gemeistert.
   bool _done = false;
@@ -55,6 +64,9 @@ class _PuzzlePageState extends State<PuzzlePage> {
 
   Position get _pos => Chess.fromSetup(Setup.parseFen(_p!.moment.fen));
 
+  /// Aktuelle Stellung auf dem Brett: Ausgangsstellung oder, im zweiten Schritt, nach der Gegnerantwort.
+  Position get _cur => _stepPos ?? _pos;
+
   Future<void> _load() async {
     final scope = AppScope.of(context);
     final stats = await scope.store.puzzleStats();
@@ -71,6 +83,10 @@ class _PuzzlePageState extends State<PuzzlePage> {
       _p = due.firstOrNull;
       _tries = 0;
       _hint = false;
+      _follow = null;
+      _stepPos = null;
+      _ownFirst = null;
+      _alt = false;
       _done = false;
       _feedback = null;
       _ownWin = null;
@@ -95,23 +111,44 @@ class _PuzzlePageState extends State<PuzzlePage> {
   );
 
   Future<void> _onMove(Move move, {bool? viaDragAndDrop}) async {
-    if (move is! NormalMove || !_pos.isLegal(move)) return;
+    if (move is! NormalMove || !_cur.isLegal(move)) return;
+    if (_follow != null) return _onFollowMove(move);
     final tr = Tr.of(context);
     final scope = AppScope.of(context);
     final pos = _pos;
     final san = tr.san(numbered(pos, [move]));
     setState(() => _judging = true);
     _board!.updatePosition(_game(pos.play(move), lastMove: move));
-    final (verdict, win, _) = await judgeMove(
+    final engine = await scope.service.engine();
+    final (verdict, win, line) = await judgeMove(
       _p!.moment,
       stdUci(pos, move),
-      await scope.service.engine(),
+      engine,
       depth: scope.settings.depth,
     );
+    // Zweizügig weiterspielen, wenn der nächste eigene Zug eindeutig ist
+    final follow = verdict == Verdict.best || verdict == Verdict.good
+        ? await findFollowUp(_p!.moment.fen, line, engine, depth: scope.settings.depth)
+        : null;
     if (!mounted) return;
     setState(() => _judging = false);
     switch (verdict) {
+      case Verdict.best || Verdict.good when follow != null:
+        final afterReply = pos.play(move).play(Move.parse(follow.reply)!);
+        final replySan = tr.san(numbered(pos.play(move), [Move.parse(follow.reply)! as NormalMove]));
+        setState(() {
+          _follow = follow;
+          _stepPos = afterReply;
+          _ownFirst = (numbered(pos, [move]), win);
+          _alt = verdict == Verdict.good;
+          _feedback = tr.t(
+            '✅ $san${verdict == Verdict.best ? '' : ' (auch gut)'}. Der Gegner antwortet $replySan. Finde jetzt den nächsten Zug!',
+            '✅ $san${verdict == Verdict.best ? '' : ' (also good)'}. Your opponent replies $replySan. Now find the next move!',
+          );
+        });
+        _board!.updatePosition(_game(afterReply, lastMove: Move.parse(follow.reply)));
       case Verdict.best || Verdict.good:
+        setState(() => _alt = verdict == Verdict.good);
         await _finish(
           _tries == 0 && !_hint ? Attempt.first : Attempt.second,
           own: (numbered(pos, [move]), win),
@@ -142,6 +179,38 @@ class _PuzzlePageState extends State<PuzzlePage> {
         });
         await Future<void>.delayed(const Duration(milliseconds: 600));
         if (mounted) _board!.updatePosition(_game(_pos), animate: false, resetPremove: true);
+    }
+  }
+
+  /// Zweiter Schritt eines zweizügigen Puzzles: nur der eindeutige Folgezug zählt.
+  Future<void> _onFollowMove(NormalMove move) async {
+    final tr = Tr.of(context);
+    final pos = _cur;
+    final san = tr.san(numbered(pos, [move]));
+    if (stdUci(pos, move) == _follow!.move) {
+      _board!.updatePosition(_game(pos.play(move), lastMove: move));
+      await _finish(
+        _tries == 0 && !_hint ? Attempt.first : Attempt.second,
+        own: _ownFirst,
+        tr.t('✅ $san – richtig, beide Züge gefunden!', '✅ $san – correct, you found both moves!'),
+      );
+    } else if (_tries >= 1) {
+      await _finish(
+        Attempt.shown,
+        own: _ownFirst,
+        tr.t('❌ $san ist nicht der gesuchte Zug.', '❌ $san is not the move we are looking for.'),
+      );
+    } else {
+      setState(() {
+        _tries = 1;
+        _feedback = tr.t(
+          '🤔 $san ist es nicht – hier gibt es einen klar besten Zug. Noch ein Versuch?',
+          '🤔 $san is not it – there is one clearly best move here. Try again?',
+        );
+      });
+      _board!.updatePosition(_game(pos.play(move), lastMove: move));
+      await Future<void>.delayed(const Duration(milliseconds: 600));
+      if (mounted) _board!.updatePosition(_game(pos, lastMove: Move.parse(_follow!.reply)), animate: false, resetPremove: true);
     }
   }
 
@@ -290,12 +359,12 @@ class _PuzzlePageState extends State<PuzzlePage> {
             children: [
               if (!_done) ...[
                 Text(
-                  '${coach.toMove(_pos.turn)}: ${tr.t('Finde den besten Zug!', 'Find the best move!')}',
+                  '${coach.toMove(_pos.turn)}: ${_follow == null ? tr.t('Finde den besten Zug!', 'Find the best move!') : tr.t('Finde den nächsten Zug!', 'Find the next move!')}',
                   style: theme.textTheme.titleMedium,
                 ),
                 if (p.lapses > 0)
                   Text(tr.t('Diese Stellung hattest du schon mal falsch.', 'You got this position wrong before.')),
-                if (_hint) ...[const SizedBox(height: 8), Text('💡 ${coach.tip(m)}')],
+                if (_hint && _follow == null) ...[const SizedBox(height: 8), Text('💡 ${coach.tip(m)}')],
                 if (_feedback != null) ...[const SizedBox(height: 8), Text(_feedback!)],
                 const SizedBox(height: 8),
                 if (_judging)
@@ -310,7 +379,7 @@ class _PuzzlePageState extends State<PuzzlePage> {
                 Wrap(
                   spacing: 8,
                   children: [
-                    if (!_hint)
+                    if (!_hint && _follow == null)
                       OutlinedButton.icon(
                         onPressed: _judging ? null : () => setState(() => _hint = true),
                         icon: const Icon(Icons.lightbulb_outline),
@@ -328,7 +397,11 @@ class _PuzzlePageState extends State<PuzzlePage> {
                   Text(_feedback!, style: theme.textTheme.titleMedium),
                   const SizedBox(height: 8),
                 ],
-                Text(tr.t('Lösung: ${tr.san(m.bestLine)}', 'Solution: ${tr.san(m.bestLine)}')),
+                Text(
+                  _alt
+                      ? tr.t('Empfohlene Variante: ${tr.san(m.bestLine)}', 'Recommended line: ${tr.san(m.bestLine)}')
+                      : tr.t('Lösung: ${tr.san(m.bestLine)}', 'Solution: ${tr.san(m.bestLine)}'),
+                ),
                 const SizedBox(height: 8),
                 _evaluation(tr, coach),
                 const SizedBox(height: 8),
