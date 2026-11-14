@@ -36,3 +36,14 @@ List<String> unknownMoves(String text, Set<String> allowed) {
   }
   return bad.toSet().toList();
 }
+
+/// Nennt [text] den Zug [san] (mit oder ohne Zugnummer, Schach-Zeichen ignoriert)? Für Fragen und Tipps,
+/// die den besten Zug nicht verraten dürfen.
+bool revealsMove(String text, String san) {
+  final target = _norm(san);
+  for (final w in text.split(RegExp(r'[\s,;:()!?]+'))) {
+    final t = _norm(w.replaceAll(RegExp(r'\.+$'), '').replaceFirst(RegExp(r'^\d+\.(\.\.)?'), ''));
+    if (t == target) return true;
+  }
+  return false;
+}

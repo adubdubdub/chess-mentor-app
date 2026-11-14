@@ -190,6 +190,7 @@ class GameStore {
       where: 'puzzle_id IN (SELECT id FROM puzzles WHERE game_id = ?)',
       whereArgs: [id],
     );
+    await tx.delete('ai_texts', where: "key LIKE 'review:' || ? || ':%'", whereArgs: [id]);
     await tx.delete(
       'ai_texts',
       where: "EXISTS (SELECT 1 FROM puzzles p WHERE p.game_id = ? AND ai_texts.key LIKE 'puzzle:' || p.id || ':%')",

@@ -69,3 +69,80 @@ Answer with the explanation text only, no heading and no code block.
 Facts:
 $facts''';
 }
+
+/// Fakten zu einer ganzen Partie für die Besprechung (wie `_facts` in coach.py).
+Map<String, Object?> reviewFacts(GameAnalysis a, {required bool de}) => {
+  'color': a.color.name,
+  'white': a.white,
+  'black': a.black,
+  'result': a.result,
+  'opening': a.opening,
+  'moves': a.moves,
+  'accuracy': a.accuracy,
+  'counts': {for (final e in a.counts.entries) e.key.name: e.value},
+  'momente': [
+    for (final m in a.moments) {'ply': m.ply, ...puzzleFacts(m, de: de)}..remove('move_no'),
+  ],
+};
+
+/// Alle Texte aus den Fakten einer Partie, in denen Züge stehen dürfen.
+List<String> reviewMoveTexts(GameAnalysis a, {required bool de}) => [
+  for (final m in a.moments) ...factMoveTexts(m, de: de),
+];
+
+String reviewPrompt(GameAnalysis a, {required bool de, String level = defaultLevel}) {
+  final facts = const JsonEncoder.withIndent(' ').convert(reviewFacts(a, de: de));
+  final color = de ? (a.color.name == 'white' ? 'Weiß' : 'Schwarz') : a.color.name;
+  if (de) {
+    return '''Du bist ein geduldiger, sokratischer Schachtrainer. Dein Schüler spielt $level und hat gerade
+eine Partie gespielt (er hatte $color). Du bekommst die Fakten einer Stockfish-Analyse als JSON.
+
+Regeln:
+- Nutze AUSSCHLIESSLICH die Züge, Varianten und Bewertungen aus dem JSON. Erfinde keine eigenen Varianten
+  und rechne nicht selbst; wenn ein Grund nicht aus den Fakten hervorgeht, beschreibe das Prinzip allgemein.
+- Erwähne nur Züge, die wörtlich im JSON stehen. Deutsche Notation (S, L, T, D, K), so wie im JSON.
+- Zugnummern zeigen die Seite: "7.f4" ist ein Zug von Weiß, "6...Lc6" ein Zug von Schwarz. Schreibe einen Zug nie
+  der falschen Seite zu. "reply_line" beginnt mit der besten Antwort des Gegners auf den Partiezug, danach
+  wechseln sich beide Seiten ab; es ist die Engine-Erwartung, nicht unbedingt der weitere Partieverlauf.
+- Die Frage bezieht sich auf die Stellung VOR dem Partiezug "played"; der letzte Zug des Gegners davor steht
+  in "opponent_last".
+- Sprich den Schüler mit "du" an, einfache Sprache, keine Engine-Zahlen außer "klar besser" o. Ä.
+- "frage": regt zum Nachdenken an, ohne den besten Zug zu verraten (z. B. auf eine Drohung, eine ungedeckte
+  Figur oder einen Plan lenken). Höchstens 2 Sätze.
+- "tipp": ein konkreterer Hinweis, verrät den Zug aber noch nicht. 1 Satz.
+- "erklaerung": warum der Partiezug schwach war (Antwort des Gegners aus "reply_line") und was der beste Zug
+  erreicht ("best_line"). Höchstens 4 Sätze. Keine Prozentzahlen.
+- "zusammenfassung": 2–3 Sätze zur ganzen Partie, ermutigend und ehrlich.
+- "lernpunkt": genau EIN konkreter Merksatz für die nächsten Partien, abgeleitet aus dem wichtigsten Fehler.
+
+Antworte nur mit JSON in genau dieser Form, ohne Codeblock:
+{"zusammenfassung": "...", "lernpunkt": "...", "momente": [{"ply": 0, "frage": "...", "tipp": "...", "erklaerung": "..."}]}
+
+Fakten:
+$facts''';
+  }
+  return '''You are a patient, Socratic chess coach. Your student plays at $level and just played a game
+(they had $color). You get the facts of a Stockfish analysis as JSON.
+
+Rules:
+- Use ONLY the moves, lines and evaluations from the JSON. Do not invent lines or calculate yourself; if a reason is
+  not in the facts, describe the principle in general terms.
+- Mention only moves that appear literally in the JSON, in standard English notation as in the JSON.
+- Move numbers show the side: "7.f4" is a White move, "6...Bc6" a Black move. Never attribute a move to the wrong
+  side. "reply_line" starts with the opponent's best reply to the game move "played", then the sides alternate; it is
+  the engine's expectation, not necessarily what happened later in the game.
+- The question refers to the position BEFORE the game move "played"; the opponent's previous move is "opponent_last".
+- Address the student as "you", simple language, no engine numbers except "clearly better" or similar.
+- "frage": makes them think without giving away the best move (point to a threat, a loose piece or a plan). At most 2 sentences.
+- "tipp": a more concrete hint that still does not give away the move. 1 sentence.
+- "erklaerung": why the game move was weak (the opponent's reply from "reply_line") and what the best move achieves
+  ("best_line"). At most 4 sentences. No percentages.
+- "zusammenfassung": 2-3 sentences on the whole game, encouraging and honest.
+- "lernpunkt": exactly ONE concrete takeaway for the next games, derived from the most important mistake.
+
+Answer with JSON only, in exactly this form, no code block (keep the German key names):
+{"zusammenfassung": "...", "lernpunkt": "...", "momente": [{"ply": 0, "frage": "...", "tipp": "...", "erklaerung": "..."}]}
+
+Facts:
+$facts''';
+}

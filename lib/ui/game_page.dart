@@ -282,7 +282,7 @@ class _GamePageState extends State<GamePage> {
           ),
         const SizedBox(height: 12),
         FilledButton.icon(
-          onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => ReviewPage(analysis: a))),
+          onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => ReviewPage(analysis: a, gameId: _game!.id))),
           icon: const Icon(Icons.school),
           label: Text(
             a.moments.isEmpty

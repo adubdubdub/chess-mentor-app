@@ -123,7 +123,7 @@ Gebaut wird nur `arm64-v8a` (`android.injected.build.abi` in `android/gradle.pro
 - [x] **Phase 3:** Puzzles mit Wiederholung (1 · 3 · 7 · 21 · 60 Tage), tägliche Erinnerung ohne Server, Auswertung mit Gewinnchance, Folge und Begründung
 - [x] **Schritt 1:** Aufräumen: App-ID `io.github.adubdubdub.schachmentor`, Signierschlüssel, kein `testOnly`, GitHub Actions
 - [x] **Schritt 2:** Puzzles: Versuche speichern ✅, Aufstieg nur im ersten Versuch ohne Tipp ✅, zweizügige Puzzles ✅ (Folgezug wird beim Lösen auf Eindeutigkeit geprüft, Abstand ≥ 15 Prozentpunkte)
-- [ ] **Schritt 3:** KI-Texte: Heimserver (Claude Code) und eigener Schlüssel, mit Zugprüfung
+- [ ] **Schritt 3:** KI-Texte: Heimserver (Claude Code) und eigener Schlüssel, mit Zugprüfung (Puzzle und Besprechung umgesetzt; offen: Cloudflare-Hostname, Test mit echtem Anbieter)
 - [ ] **Schritt 4:** Export/Import, Übernahme der Bot-Daten
 - [ ] **Schritt 5:** Abruf per Benutzername (Lichess, Chess.com), mehrere Partien je PGN
 - [ ] **Schritt 6:** Schwächenprofil und Wochenfokus

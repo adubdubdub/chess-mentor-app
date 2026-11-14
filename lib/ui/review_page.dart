@@ -6,6 +6,7 @@ import '../analysis/analysis.dart';
 import '../analysis/chess_utils.dart';
 import '../analysis/judge.dart';
 import '../coach/coach_texts.dart';
+import '../ai/review_texts.dart';
 import 'app_scope.dart';
 import 'evaluation_table.dart';
 import 'line_viewer.dart';
@@ -14,9 +15,10 @@ import 'strings.dart';
 
 /// Sokratische Besprechung: je Schlüsselmoment eine Frage, Zug am Brett, Prüfung durch Stockfish, Tipp und Auflösung.
 class ReviewPage extends StatefulWidget {
-  const ReviewPage({super.key, required this.analysis});
+  const ReviewPage({super.key, required this.analysis, required this.gameId});
 
   final GameAnalysis analysis;
+  final int gameId;
 
   @override
   State<ReviewPage> createState() => _ReviewPageState();
@@ -37,6 +39,10 @@ class _ReviewPageState extends State<ReviewPage> {
   (Verdict, double, List<String>)? _attempt;
   late ChessboardController _board;
 
+  /// KI-Texte (null = Textbausteine); kommen asynchron und ersetzen nur geprüfte Felder.
+  ReviewTexts? _ai;
+  bool _aiLoading = false;
+
   List<Moment> get _moments => widget.analysis.moments;
   Moment get _m => _moments[_idx];
   Position get _pos => Chess.fromSetup(Setup.parseFen(_m.fen));
@@ -46,6 +52,18 @@ class _ReviewPageState extends State<ReviewPage> {
     super.initState();
     _board = ChessboardController(game: _game(_pos));
     if (_moments.isEmpty) _finished = true;
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final scope = AppScope.of(context);
+    if (scope.ai.enabled && !_aiLoading && _ai == null && _moments.isNotEmpty) {
+      _aiLoading = true;
+      scope.ai.reviewTexts(widget.gameId, widget.analysis, de: Tr.of(context).de).then((t) {
+        if (mounted) setState(() => _ai = t);
+      });
+    }
   }
 
   @override
@@ -188,8 +206,8 @@ class _ReviewPageState extends State<ReviewPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               if (!_revealed) ...[
-                Text('❓ ${coach.question(m)}', style: theme.textTheme.titleMedium),
-                if (_hint) ...[const SizedBox(height: 8), Text('💡 ${coach.tip(m)}')],
+                Text('❓ ${_ai?.moments[m.ply]?.question ?? coach.question(m)}', style: theme.textTheme.titleMedium),
+                if (_hint) ...[const SizedBox(height: 8), Text('💡 ${_ai?.moments[m.ply]?.tip ?? coach.tip(m)}')],
                 if (_feedback != null) ...[const SizedBox(height: 8), MoveText(_feedback!)],
                 const SizedBox(height: 8),
                 if (_judging)
@@ -242,7 +260,7 @@ class _ReviewPageState extends State<ReviewPage> {
                   ],
                 ),
                 const SizedBox(height: 12),
-                ...explanationSections(coach, m, attempt: attempt),
+                ...explanationSections(coach, m, attempt: attempt, aiText: _ai?.moments[m.ply]?.explanation),
                 const SizedBox(height: 4),
                 FilledButton.icon(
                   onPressed: _next,
@@ -265,14 +283,14 @@ class _ReviewPageState extends State<ReviewPage> {
     return ListView(
       padding: const EdgeInsets.all(24),
       children: [
-        Text(coach.summary(a), style: theme.textTheme.bodyLarge),
+        Text(_ai?.summary ?? coach.summary(a), style: theme.textTheme.bodyLarge),
         const SizedBox(height: 24),
         Text(
           '🎯 ${tr.t('Lernpunkt für die nächsten Partien', 'Takeaway for your next games')}',
           style: theme.textTheme.titleMedium,
         ),
         const SizedBox(height: 8),
-        Text(coach.learningPoint(a), style: theme.textTheme.titleLarge),
+        Text(_ai?.learning ?? coach.learningPoint(a), style: theme.textTheme.titleLarge),
         if (n > 0) ...[
           const SizedBox(height: 24),
           Text(
@@ -299,7 +317,12 @@ List<LineOption> lineOptions(Tr tr, Moment m, {(Verdict, double, List<String>)? 
 
 /// Erklärung: Gewinnchance-Tabelle, dann farbige Abschnitte (warum der Partiezug schwach ist, warum der beste Zug stark
 /// ist, dein Versuch). Die Prozentwerte stehen nur in der Tabelle.
-List<Widget> explanationSections(CoachTexts coach, Moment m, {(Verdict, double, List<String>)? attempt}) {
+List<Widget> explanationSections(
+  CoachTexts coach,
+  Moment m, {
+  (Verdict, double, List<String>)? attempt,
+  String? aiText,
+}) {
   final tr = coach.tr;
   final p = CoachTexts.mark('p', tr.san(m.played));
   final b = CoachTexts.mark('b', tr.san(m.best));
@@ -308,6 +331,7 @@ List<Widget> explanationSections(CoachTexts coach, Moment m, {(Verdict, double, 
   return [
     EvaluationTable(moment: m, tr: tr, ownSan: first == null ? null : numbered(pos, [first]), ownWin: attempt?.$2),
     const SizedBox(height: 8),
+    if (aiText != null) ...[Text('💬 $aiText'), const SizedBox(height: 8)],
     ColoredSection(
       color: playedColor,
       title: tr.t('Warum $p nicht gut war', 'Why $p was not good'),

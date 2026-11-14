@@ -2,12 +2,16 @@
 /// Bei jedem Problem (kein Netz, Fehler, erfundene Züge) liefert die Funktion null; dann gelten die Textbausteine.
 library;
 
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 
 import '../data/game_store.dart';
 import '../data/settings.dart';
+import '../analysis/analysis.dart';
 import 'prompts.dart';
 import 'provider.dart';
+import 'review_texts.dart';
 import 'secrets.dart';
 import 'verify.dart';
 
@@ -56,6 +60,32 @@ class MentorAi {
       }
       await store.putAiText(key, text);
       return text;
+    } on AiException catch (e) {
+      debugPrint('KI nicht verfügbar: $e');
+      return null;
+    }
+  }
+
+  /// KI-Texte für die Besprechung einer Partie; null = Textbausteine verwenden.
+  /// Einzelne Felder, die die Prüfung nicht bestehen, bleiben null (dort gilt der Textbaustein).
+  Future<ReviewTexts?> reviewTexts(int gameId, GameAnalysis a, {required bool de}) async {
+    final key = 'review:$gameId:${de ? 'de' : 'en'}:v$promptVersion';
+    final cached = await store.aiText(key);
+    if (cached != null) {
+      try {
+        return ReviewTexts.fromJson(jsonDecode(cached) as Map<String, dynamic>);
+      } catch (_) {}
+    }
+    final provider = await _provider();
+    if (provider == null) return null;
+    try {
+      final texts = parseReview(await provider.complete(reviewPrompt(a, de: de)), a, de: de);
+      if (texts == null) {
+        debugPrint('KI-Besprechung verworfen (nichts Brauchbares)');
+        return null;
+      }
+      await store.putAiText(key, jsonEncode(texts.toJson()));
+      return texts;
     } on AiException catch (e) {
       debugPrint('KI nicht verfügbar: $e');
       return null;
