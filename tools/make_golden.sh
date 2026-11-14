@@ -1,5 +1,5 @@
 #!/bin/bash
-# Erzeugt test/fixtures/<name>.golden.json mit der Analyse des Telegram-Bots (Container chess-mentor).
+# Erzeugt test/fixtures/<name>.golden.json mit der Analyse des Telegram-Bots (Container chess-mentor). Nur bis zum Bot-Abbau nötig; die vorhandenen Referenz-JSONs bleiben als Fixtures.
 # Aufruf: tools/make_golden.sh <name> <white|black> [Tiefe]
 set -eu
 cd "$(dirname "$0")/.."

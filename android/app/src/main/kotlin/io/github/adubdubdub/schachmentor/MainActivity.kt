@@ -1,4 +1,4 @@
-package de.lws20.chess_mentor
+package io.github.adubdubdub.schachmentor
 
 import io.flutter.embedding.android.FlutterActivity
 

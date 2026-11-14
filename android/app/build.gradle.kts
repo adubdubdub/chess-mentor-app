@@ -1,11 +1,20 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+// Signierschlüssel liegt außerhalb des Repos (/root/keys/schachmentor, nie committen);
+// ohne Datei wird mit dem Debug-Schlüssel signiert (z. B. in GitHub Actions).
+val keyProps = Properties().apply {
+    val f = file(System.getenv("SCHACHMENTOR_KEY_PROPERTIES") ?: "/root/keys/schachmentor/key.properties")
+    if (f.exists()) f.inputStream().use { load(it) }
+}
+
 android {
-    namespace = "de.lws20.chess_mentor"
+    namespace = "io.github.adubdubdub.schachmentor"
     // 37: receive_sharing_intent 1.9 verlangt es
     compileSdk = 37
     ndkVersion = flutter.ndkVersion
@@ -19,7 +28,7 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "de.lws20.chess_mentor"
+        applicationId = "io.github.adubdubdub.schachmentor"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
@@ -30,13 +39,29 @@ android {
         // flag during build.
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        // Nur arm64 ausliefern (ersetzt android.injected.build.abi, das die APK als testOnly markierte)
+        ndk { abiFilters += listOf("arm64-v8a") }
+    }
+
+    packaging {
+        // Stockfish-Plugins liefern fest drei Architekturen mit; nur arm64 behalten
+        jniLibs { excludes += listOf("lib/armeabi-v7a/**", "lib/x86_64/**") }
+    }
+
+    signingConfigs {
+        if (keyProps.containsKey("storeFile")) {
+            create("release") {
+                storeFile = file(keyProps.getProperty("storeFile"))
+                storePassword = keyProps.getProperty("storePassword")
+                keyAlias = keyProps.getProperty("keyAlias")
+                keyPassword = keyProps.getProperty("keyPassword")
+            }
+        }
     }
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
         }
     }
 }

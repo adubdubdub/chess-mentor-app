@@ -30,22 +30,8 @@ String _motifDe(Motif m) => switch (m.code) {
   _ => m.code,
 };
 
-bool _dockerAvailable() {
-  try {
-    return Process.runSync('docker', [
-          'inspect',
-          '-f',
-          '{{.State.Running}}',
-          'chess-mentor',
-        ]).stdout.toString().trim() ==
-        'true';
-  } catch (_) {
-    return false;
-  }
-}
-
 void main() {
-  final skip = _dockerAvailable() ? false : 'Container chess-mentor nicht erreichbar';
+  final skip = engineCommand() != null ? false : 'Kein Stockfish (STOCKFISH_BIN setzen)';
   late ProcessEngine engine;
 
   setUpAll(() async {

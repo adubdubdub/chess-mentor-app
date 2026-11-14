@@ -1,3 +1,3 @@
 tags:
   engine:
-    # braucht den Docker-Container chess-mentor (Stockfish des Telegram-Bots)
+    # braucht ein lokales Stockfish (STOCKFISH_BIN oder /root/dev/stockfish/stockfish), bis zum Bot-Abbau ersatzweise den Container chess-mentor
