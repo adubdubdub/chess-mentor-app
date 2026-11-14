@@ -25,4 +25,15 @@ void main() {
     expect(dueOn(dues, DateTime(2026, 11, 12), 5), 3);
     expect(dueOn(dues, DateTime(2026, 12, 1), 2), 2);
   });
+
+  test('zweiter Versuch oder Tipp: bleibt auf der Stufe, Wiederholung nach deren Abstand', () {
+    expect(gradeAttempt(0, Attempt.second, today), (0, '2026-11-09'));
+    expect(gradeAttempt(2, Attempt.second, today), (2, '2026-11-15'));
+    expect(gradeAttempt(4, Attempt.second, today), (4, '2027-01-07'));
+  });
+
+  test('erster Versuch steigt auf, Lösung gezeigt fällt auf morgen zurück', () {
+    expect(gradeAttempt(1, Attempt.first, today), (2, '2026-11-15'));
+    expect(gradeAttempt(3, Attempt.shown, today), (0, '2026-11-09'));
+  });
 }

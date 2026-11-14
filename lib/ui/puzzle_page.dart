@@ -6,6 +6,7 @@ import '../analysis/chess_utils.dart';
 import '../analysis/judge.dart';
 import '../coach/coach_texts.dart';
 import '../data/game_store.dart';
+import '../puzzles/schedule.dart';
 import 'app_scope.dart';
 import 'evaluation_table.dart';
 import 'strings.dart';
@@ -112,7 +113,7 @@ class _PuzzlePageState extends State<PuzzlePage> {
     switch (verdict) {
       case Verdict.best || Verdict.good:
         await _finish(
-          true,
+          _tries == 0 && !_hint ? Attempt.first : Attempt.second,
           own: (numbered(pos, [move]), win),
           verdict == Verdict.best
               ? tr.t('✅ $san – genau der stärkste Zug!', '✅ $san – exactly the strongest move!')
@@ -120,7 +121,7 @@ class _PuzzlePageState extends State<PuzzlePage> {
         );
       case Verdict.played || Verdict.weak when _tries >= 1:
         await _finish(
-          false,
+          Attempt.shown,
           own: (numbered(pos, [move]), win),
           tr.t('❌ $san ist leider auch nicht besser.', '❌ Unfortunately $san is not better either.'),
         );
@@ -144,9 +145,9 @@ class _PuzzlePageState extends State<PuzzlePage> {
     }
   }
 
-  Future<void> _finish(bool solved, String? feedback, {(String, double)? own}) async {
+  Future<void> _finish(Attempt result, String? feedback, {(String, double)? own}) async {
     final scope = AppScope.of(context);
-    final due = await scope.store.gradePuzzle(_p!.id, solved);
+    final due = await scope.store.gradePuzzle(_p!.id, result, wrong: _tries, hint: _hint);
     await scope.reminders.reschedule();
     if (!mounted) return;
     setState(() {
@@ -316,7 +317,7 @@ class _PuzzlePageState extends State<PuzzlePage> {
                         label: Text(tr.t('Tipp', 'Hint')),
                       ),
                     FilledButton.tonalIcon(
-                      onPressed: _judging ? null : () => _finish(false, null),
+                      onPressed: _judging ? null : () => _finish(Attempt.shown, null),
                       icon: const Icon(Icons.visibility),
                       label: Text(tr.t('Lösung', 'Solution')),
                     ),

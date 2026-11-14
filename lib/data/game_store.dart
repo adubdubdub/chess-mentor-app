@@ -48,12 +48,14 @@ class GameStore {
   static Future<GameStore> open() async {
     final db = await openDatabase(
       'games.db',
-      version: 2,
+      version: 3,
       onCreate: (db, _) async {
         await db.execute(_gamesTable);
         await _createPuzzles(db);
+        await _createAttempts(db);
       },
       onUpgrade: (db, from, _) async {
+        if (from < 3) await _createAttempts(db);
         if (from < 2) {
           await _createPuzzles(db);
           // Fehler aus schon analysierten Partien als Puzzles übernehmen
@@ -99,6 +101,17 @@ class GameStore {
       )''');
     await db.execute('CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL)');
   }
+
+  /// Jeder Puzzle-Versuch: result = first | second | shown, wrong = falsche Züge, hint = Tipp angesehen.
+  static Future<void> _createAttempts(Database db) => db.execute('''
+    CREATE TABLE puzzle_attempts (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      puzzle_id INTEGER NOT NULL,
+      at TEXT NOT NULL,
+      result TEXT NOT NULL,
+      wrong INTEGER NOT NULL,
+      hint INTEGER NOT NULL
+    )''');
 
   static Future<void> _insertPuzzles(DatabaseExecutor db, int gameId, List<Moment> moments) async {
     final due = firstDue(DateTime.now());
@@ -157,6 +170,11 @@ class GameStore {
   });
 
   Future<void> delete(int id) => _db.transaction((tx) async {
+    await tx.delete(
+      'puzzle_attempts',
+      where: 'puzzle_id IN (SELECT id FROM puzzles WHERE game_id = ?)',
+      whereArgs: [id],
+    );
     await tx.delete('puzzles', where: 'game_id = ?', whereArgs: [id]);
     await tx.delete('games', where: 'id = ?', whereArgs: [id]);
   });
@@ -198,15 +216,22 @@ class GameStore {
   }
 
   /// Ergebnis eintragen; gibt die neue Fälligkeit zurück (null = gemeistert).
-  Future<String?> gradePuzzle(int id, bool solved) => _db.transaction((tx) async {
+  Future<String?> gradePuzzle(int id, Attempt result, {int wrong = 0, bool hint = false}) => _db.transaction((tx) async {
     final row = (await tx.query('puzzles', where: 'id = ?', whereArgs: [id])).first;
-    final (level, due) = grade(row['level']! as int, solved, DateTime.now());
+    final (level, due) = gradeAttempt(row['level']! as int, result, DateTime.now());
     await tx.rawUpdate('UPDATE puzzles SET level = ?, due = ?, reps = reps + 1, lapses = lapses + ? WHERE id = ?', [
       level,
       due,
-      solved ? 0 : 1,
+      result == Attempt.shown ? 1 : 0,
       id,
     ]);
+    await tx.insert('puzzle_attempts', {
+      'puzzle_id': id,
+      'at': DateTime.now().toIso8601String(),
+      'result': result.name,
+      'wrong': wrong,
+      'hint': hint ? 1 : 0,
+    });
     final key = 'puzzles:${isoDay(DateTime.now())}';
     final done =
         int.tryParse(

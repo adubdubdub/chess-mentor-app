@@ -27,3 +27,22 @@ int dueOn(Iterable<String> dueDates, DateTime date, int perDay) {
   final n = dueDates.where((d) => d.compareTo(key) <= 0).length;
   return n < perDay ? n : perDay;
 }
+
+/// Ausgang eines Puzzle-Versuchs.
+enum Attempt {
+  /// Erster Versuch, ohne Tipp: das Puzzle steigt eine Stufe auf.
+  first,
+
+  /// Gelöst, aber mit Tipp oder erst im zweiten Versuch: bleibt auf seiner Stufe.
+  second,
+
+  /// Lösung angezeigt oder zweimal falsch: zurück auf morgen.
+  shown,
+}
+
+/// Neue Stufe und Fälligkeit nach einem Versuch mit [result]; null = gemeistert.
+(int, String?) gradeAttempt(int level, Attempt result, DateTime today) => switch (result) {
+  Attempt.first => grade(level, true, today),
+  Attempt.second => (level, isoDay(day(today).add(Duration(days: intervals[level.clamp(0, intervals.length - 1)])))),
+  Attempt.shown => grade(level, false, today),
+};
