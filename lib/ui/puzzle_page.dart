@@ -36,6 +36,10 @@ class _PuzzlePageState extends State<PuzzlePage> {
   /// Erster Zug war eine gute Alternative zum empfohlenen Zug.
   bool _alt = false;
 
+  /// KI-Erklärung zum Puzzle (null = Textbaustein), und ob sie gerade geladen wird.
+  String? _aiText;
+  bool _aiLoading = false;
+
   /// Nach dem Ergebnis: neue Fälligkeit bzw. null = gemeistert.
   bool _done = false;
   String? _nextDue;
@@ -87,6 +91,8 @@ class _PuzzlePageState extends State<PuzzlePage> {
       _stepPos = null;
       _ownFirst = null;
       _alt = false;
+      _aiText = null;
+      _aiLoading = false;
       _done = false;
       _feedback = null;
       _ownWin = null;
@@ -227,6 +233,17 @@ class _PuzzlePageState extends State<PuzzlePage> {
       _ownWin = own?.$2;
     });
     _board!.updatePosition(_game(_pos), animate: false, resetPremove: true);
+    if (scope.ai.enabled) _loadAi(scope, _p!);
+  }
+
+  Future<void> _loadAi(AppScope scope, StoredPuzzle p) async {
+    setState(() => _aiLoading = true);
+    final text = await scope.ai.puzzleExplanation(p, de: Tr.of(context).de);
+    if (!mounted || _p?.id != p.id) return;
+    setState(() {
+      _aiText = text;
+      _aiLoading = false;
+    });
   }
 
   /// Auswertung nach dem Puzzle in drei Blöcken: Gewinnchance je Zug, Folge des Partiezugs, Begründung.
@@ -246,7 +263,15 @@ class _PuzzlePageState extends State<PuzzlePage> {
           Text(tr.san(m.replyLine)),
         ],
         heading(tr.t('Warum', 'Why')),
-        Text(coach.puzzleWhy(m)),
+        Text(_aiText ?? coach.puzzleWhy(m)),
+        if (_aiLoading)
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(
+              tr.t('KI formuliert eine ausführlichere Erklärung …', 'The AI is writing a fuller explanation …'),
+              style: theme.textTheme.bodySmall,
+            ),
+          ),
       ],
     );
   }

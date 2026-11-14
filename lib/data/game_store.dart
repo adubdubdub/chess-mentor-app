@@ -48,13 +48,15 @@ class GameStore {
   static Future<GameStore> open() async {
     final db = await openDatabase(
       'games.db',
-      version: 3,
+      version: 4,
       onCreate: (db, _) async {
         await db.execute(_gamesTable);
         await _createPuzzles(db);
         await _createAttempts(db);
+        await _createAiTexts(db);
       },
       onUpgrade: (db, from, _) async {
+        if (from < 4) await _createAiTexts(db);
         if (from < 3) await _createAttempts(db);
         if (from < 2) {
           await _createPuzzles(db);
@@ -112,6 +114,19 @@ class GameStore {
       wrong INTEGER NOT NULL,
       hint INTEGER NOT NULL
     )''');
+
+  /// Zwischenspeicher für KI-Texte (Schlüssel enthält Art, Id, Sprache und Prompt-Version).
+  static Future<void> _createAiTexts(Database db) =>
+      db.execute('CREATE TABLE ai_texts (key TEXT PRIMARY KEY, text TEXT NOT NULL, created TEXT NOT NULL)');
+
+  Future<String?> aiText(String key) async =>
+      (await _db.query('ai_texts', where: 'key = ?', whereArgs: [key])).firstOrNull?['text'] as String?;
+
+  Future<void> putAiText(String key, String text) => _db.insert('ai_texts', {
+    'key': key,
+    'text': text,
+    'created': DateTime.now().toIso8601String(),
+  }, conflictAlgorithm: ConflictAlgorithm.replace);
 
   static Future<void> _insertPuzzles(DatabaseExecutor db, int gameId, List<Moment> moments) async {
     final due = firstDue(DateTime.now());
@@ -173,6 +188,11 @@ class GameStore {
     await tx.delete(
       'puzzle_attempts',
       where: 'puzzle_id IN (SELECT id FROM puzzles WHERE game_id = ?)',
+      whereArgs: [id],
+    );
+    await tx.delete(
+      'ai_texts',
+      where: "EXISTS (SELECT 1 FROM puzzles p WHERE p.game_id = ? AND ai_texts.key LIKE 'puzzle:' || p.id || ':%')",
       whereArgs: [id],
     );
     await tx.delete('puzzles', where: 'game_id = ?', whereArgs: [id]);

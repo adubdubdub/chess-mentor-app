@@ -3,8 +3,10 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../analysis/analysis.dart';
 import '../analysis/chess_utils.dart';
+import '../data/settings.dart';
 import '../engine/mobile_engine.dart';
 import '../engine/net_manager.dart';
+import 'ai_page.dart';
 import 'app_scope.dart';
 import 'strings.dart';
 
@@ -125,6 +127,19 @@ class _EnginePageState extends State<EnginePage> {
         builder: (context, _) => ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.auto_awesome),
+              title: Text(tr.t('KI-Texte', 'AI texts')),
+              subtitle: Text(switch (settings.aiMode) {
+                AiMode.templates => tr.t('Textbausteine', 'Built-in texts'),
+                AiMode.home => tr.t('Heimserver', 'Home server'),
+                AiMode.ownKey => tr.t('Eigener Schlüssel', 'Own key'),
+              }),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const AiPage())),
+            ),
+            const Divider(),
             Text(tr.net, style: theme.textTheme.titleMedium),
             RadioGroup<EngineNet>(
               groupValue: settings.net == EngineNet.full && _installed ? EngineNet.full : EngineNet.light,

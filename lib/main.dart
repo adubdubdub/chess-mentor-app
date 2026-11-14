@@ -2,6 +2,8 @@ import 'package:chessground/chessground.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
+import 'ai/mentor_ai.dart';
+import 'ai/secrets.dart';
 import 'data/game_store.dart';
 import 'data/settings.dart';
 import 'engine/analysis_service.dart';
@@ -18,13 +20,23 @@ Future<void> main() async {
   final settings = await Settings.load();
   final service = AnalysisService(store, settings, NetManager());
   final reminders = Reminders(store, settings);
+  final secrets = SecretStore();
+  final ai = MentorAi(settings, secrets, store);
   await reminders.init();
   service.onAnalysed = reminders.reschedule;
   settings.addListener(reminders.reschedule);
   reminders.onOpen = _openPuzzles;
   service.resume();
   runApp(
-    AppScope(store: store, settings: settings, service: service, reminders: reminders, child: const ChessMentorApp()),
+    AppScope(
+      store: store,
+      settings: settings,
+      service: service,
+      reminders: reminders,
+      ai: ai,
+      secrets: secrets,
+      child: const ChessMentorApp(),
+    ),
   );
   await reminders.requestPermission();
   await reminders.reschedule();

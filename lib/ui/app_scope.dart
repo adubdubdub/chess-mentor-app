@@ -1,5 +1,7 @@
 import 'package:flutter/widgets.dart';
 
+import '../ai/mentor_ai.dart';
+import '../ai/secrets.dart';
 import '../data/game_store.dart';
 import '../data/settings.dart';
 import '../engine/analysis_service.dart';
@@ -13,6 +15,8 @@ class AppScope extends InheritedWidget {
     required this.settings,
     required this.service,
     required this.reminders,
+    required this.ai,
+    required this.secrets,
     required super.child,
   });
 
@@ -20,6 +24,8 @@ class AppScope extends InheritedWidget {
   final Settings settings;
   final AnalysisService service;
   final Reminders reminders;
+  final MentorAi ai;
+  final SecretStore secrets;
 
   static AppScope of(BuildContext context) => context.dependOnInheritedWidgetOfExactType<AppScope>()!;
 

@@ -3,6 +3,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../engine/mobile_engine.dart';
 
+/// Woher die Texte kommen: Textbausteine (offline), Heimserver (KI-Gateway) oder eigener Schlüssel.
+enum AiMode { templates, home, ownKey }
+
 /// Einstellungen der App (shared_preferences).
 class Settings extends ChangeNotifier {
   Settings._(this._prefs);
@@ -39,6 +42,16 @@ class Settings extends ChangeNotifier {
   /// Hinweis zur Bedienung des Verlaufs schon gesehen (nach erstem Antippen oder Zoomen).
   bool get chartHintSeen => _prefs.getBool('chartHintSeen') ?? false;
   set chartHintSeen(bool v) => _set(() => _prefs.setBool('chartHintSeen', v));
+
+  AiMode get aiMode => AiMode.values.byName(_prefs.getString('aiMode') ?? AiMode.templates.name);
+  set aiMode(AiMode v) => _set(() => _prefs.setString('aiMode', v.name));
+
+  /// Basis-URL und Modell je Weg (Schlüssel liegen im Android-Keystore, siehe SecretStore).
+  String aiBaseUrl(AiMode m) => _prefs.getString('aiBaseUrl.${m.name}') ?? '';
+  void setAiBaseUrl(AiMode m, String v) => _set(() => _prefs.setString('aiBaseUrl.${m.name}', v.trim()));
+
+  String aiModel(AiMode m) => _prefs.getString('aiModel.${m.name}') ?? (m == AiMode.home ? 'sonnet' : '');
+  void setAiModel(AiMode m, String v) => _set(() => _prefs.setString('aiModel.${m.name}', v.trim()));
 
   void _set(Future<bool> Function() write) {
     write();
