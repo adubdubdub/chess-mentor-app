@@ -20,6 +20,7 @@ class FocusCard extends StatelessWidget {
     this.onStart,
     this.onCancel,
     this.onPractice,
+    this.onReview,
   });
 
   final FocusState state;
@@ -35,6 +36,9 @@ class FocusCard extends StatelessWidget {
   final void Function(FocusSuggestion suggestion)? onStart;
   final VoidCallback? onCancel;
   final VoidCallback? onPractice;
+
+  /// Rückblick auf den zuletzt beendeten Fokus.
+  final void Function(FocusEntry focus)? onReview;
 
   @override
   Widget build(BuildContext context) {
@@ -146,7 +150,14 @@ class FocusCard extends StatelessWidget {
     };
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
-      child: Text('$icon $text', style: theme.textTheme.bodyMedium),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('$icon $text', style: theme.textTheme.bodyMedium),
+          if (onReview != null)
+            TextButton(onPressed: () => onReview!(c), child: Text(tr.t('Rückblick ansehen', 'View review'))),
+        ],
+      ),
     );
   }
 

@@ -8,6 +8,7 @@ import '../mentor/focus.dart';
 import '../mentor/focus_keeper.dart';
 import 'app_scope.dart';
 import 'focus_card.dart';
+import 'focus_review_page.dart';
 import 'puzzle_page.dart';
 import 'game_page.dart';
 import 'profile_view.dart';
@@ -25,6 +26,7 @@ class MentorPage extends StatefulWidget {
 class _MentorPageState extends State<MentorPage> {
   List<GameRecord>? _records;
   FocusState _focus = const FocusState();
+  List<FocusEntry> _history = const [];
   int _duePuzzles = 0;
   String? _aiText;
   bool _aiLoading = false;
@@ -43,11 +45,13 @@ class _MentorPageState extends State<MentorPage> {
     final focus = await FocusKeeper(store).refresh();
     final records = await store.mentorRecords();
     final due = focus.active == null ? 0 : await store.dueFocusPuzzles(focus.active!.topic);
+    final history = [for (final f in (await store.focusHistory()).reversed) if (f.status != FocusStatus.active && f.status != FocusStatus.cancelled) f];
     if (mounted) {
       setState(() {
         _records = records;
         _focus = focus;
         _duePuzzles = due;
+        _history = history;
       });
       _loadAi(records, focus);
     }
@@ -83,6 +87,34 @@ class _MentorPageState extends State<MentorPage> {
 
   Profile _profile(List<GameRecord> records) => buildProfile(records);
 
+  void _openReview(FocusEntry f) =>
+      Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => FocusReviewPage(focus: f))).then((_) => _load());
+
+  Widget? _historyList(Tr tr) {
+    if (_history.isEmpty) return null;
+    String icon(FocusStatus s) => switch (s) {
+      FocusStatus.reached => '✅',
+      FocusStatus.missed => '❌',
+      _ => '⏱',
+    };
+    String date(DateTime d) => '${d.day.toString().padLeft(2, '0')}.${d.month.toString().padLeft(2, '0')}.';
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(tr.t('Frühere Fokus-Wochen', 'Previous focus weeks'), style: Theme.of(context).textTheme.titleMedium),
+        for (final f in _history)
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            dense: true,
+            title: Text('${icon(f.status)} ${tr.topicName(f.topic)}'),
+            subtitle: Text('${date(f.startedAt)}–${date(f.endsAt.subtract(const Duration(days: 1)))}'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => _openReview(f),
+          ),
+      ],
+    );
+  }
+
   Widget _card(BuildContext context, List<GameRecord> records) {
     final store = AppScope.of(context).store;
     final reminders = AppScope.of(context).reminders;
@@ -105,6 +137,7 @@ class _MentorPageState extends State<MentorPage> {
         await reminders.rescheduleFocus();
         await _load();
       },
+      onReview: _openReview,
       onPractice: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const PuzzlePage())).then((_) => _load()),
     );
   }
@@ -121,6 +154,7 @@ class _MentorPageState extends State<MentorPage> {
               profile: _profile(records),
               onGame: (id) => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => GamePage(id: id))),
               header: records.isEmpty ? null : _card(context, records),
+              footer: _historyList(tr),
               onTopic: (t) => Navigator.of(context).push(
                 MaterialPageRoute<void>(builder: (_) => TopicPage(topic: t, records: records)),
               ),

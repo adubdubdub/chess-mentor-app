@@ -12,7 +12,7 @@ import 'topic_info_sheet.dart';
 
 /// Darstellung des Schwächenprofils (reine Anzeige, bekommt fertige Daten).
 class ProfileView extends StatelessWidget {
-  const ProfileView({super.key, required this.profile, this.onTopic, this.onGame, this.header});
+  const ProfileView({super.key, required this.profile, this.onTopic, this.onGame, this.header, this.footer});
 
   final Profile profile;
 
@@ -24,6 +24,9 @@ class ProfileView extends StatelessWidget {
 
   /// Wird über den Kennzahlen angezeigt (z. B. die Fokuskarte); fehlt bei leerem Profil.
   final Widget? header;
+
+  /// Wird unter der Fußnote angezeigt (z. B. frühere Fokus-Wochen).
+  final Widget? footer;
 
   @override
   Widget build(BuildContext context) {
@@ -148,6 +151,7 @@ class ProfileView extends StatelessWidget {
               ),
             ),
         ],
+        if (footer != null) ...[const SizedBox(height: 20), footer!],
         const SizedBox(height: 24),
         Text(
           tr.t(

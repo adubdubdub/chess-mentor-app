@@ -452,6 +452,23 @@ class GameStore {
   Future<void> closeFocus(int id, FocusStatus status, DateTime at) =>
       _db.update('focus', {'status': status.name, 'closed_at': at.toIso8601String()}, where: 'id = ?', whereArgs: [id]);
 
+  /// Puzzle-Versuche zum Thema des Fokus [f] während seiner Laufzeit und davon sauber gelöste (erster Versuch ohne Tipp).
+  Future<({int attempts, int clean})> focusPuzzleStats(FocusEntry f) async {
+    final rows = await _db.rawQuery(
+      'SELECT p.moment AS moment, a.result AS result FROM puzzle_attempts a JOIN puzzles p ON p.id = a.puzzle_id '
+      'WHERE a.at >= ? AND a.at < ?',
+      [f.startedAt.toIso8601String(), f.endsAt.toIso8601String()],
+    );
+    var attempts = 0, clean = 0;
+    for (final r in rows) {
+      final m = Moment.fromJson(jsonDecode(r['moment']! as String) as Map<String, dynamic>);
+      if (!topicsOf(m).contains(f.topic)) continue;
+      attempts++;
+      if (r['result'] == Attempt.first.name) clean++;
+    }
+    return (attempts: attempts, clean: clean);
+  }
+
   /// Fällige Puzzles zum Thema [topic] (für die Anzeige im Wochenfokus).
   Future<int> dueFocusPuzzles(Topic topic) async =>
       [for (final p in await duePuzzles(limit: 500)) if (topicsOf(p.moment).contains(topic)) p].length;
