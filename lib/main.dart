@@ -8,6 +8,7 @@ import 'data/game_store.dart';
 import 'data/settings.dart';
 import 'engine/analysis_service.dart';
 import 'engine/net_manager.dart';
+import 'fetch/fetch_service.dart';
 import 'puzzles/reminders.dart';
 import 'ui/app_scope.dart';
 import 'ui/home_page.dart';
@@ -22,6 +23,7 @@ Future<void> main() async {
   final reminders = Reminders(store, settings);
   final secrets = SecretStore();
   final ai = MentorAi(settings, secrets, store);
+  final fetch = FetchService(store, settings, service);
   await reminders.init();
   service.onAnalysed = reminders.reschedule;
   settings.addListener(reminders.reschedule);
@@ -34,10 +36,12 @@ Future<void> main() async {
       service: service,
       reminders: reminders,
       ai: ai,
+      fetch: fetch,
       secrets: secrets,
       child: const ChessMentorApp(),
     ),
   );
+  fetch.autoFetch(); // ohne await: Fehler (kein Netz) dürfen den Start nicht verzögern
   await reminders.requestPermission();
   await reminders.reschedule();
   if (await reminders.launchedFromReminder()) {

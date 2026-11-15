@@ -3,7 +3,8 @@
 /// Eine Partie enthält PGN, Farbe, optional die fertige Analyse und je Puzzle den Lernstand (Stufe, Fälligkeit,
 /// Versuche) sowie gespeicherte KI-Texte. Ohne Analyse (z. B. Übernahme aus dem Telegram-Bot) wird die Partie neu
 /// analysiert, und der Lernstand wird danach auf die entstehenden Puzzles übertragen (über die Zugnummer `ply`).
-/// Schlüssel und Einstellungen sind nie Teil des Exports.
+/// Neben den Partien enthält die Datei die Benutzernamen der Online-Konten (kein Passwort). Schlüssel und übrige
+/// Einstellungen sind nie Teil des Exports.
 library;
 
 import 'dart:convert';
@@ -13,6 +14,7 @@ import 'package:dartchess/dartchess.dart' show Side;
 import '../ai/prompts.dart';
 import '../analysis/analysis.dart';
 import 'game_store.dart';
+import 'settings.dart';
 
 const exportFormat = 'schach-mentor-export';
 const exportVersion = 1;
@@ -34,9 +36,12 @@ bool looksLikeExport(String text) {
 }
 
 class Backup {
-  Backup(this.store);
+  Backup(this.store, {this.settings});
 
   final GameStore store;
+
+  /// Für die Konten (Benutzernamen); ohne Einstellungen werden sie weder exportiert noch übernommen.
+  final Settings? settings;
 
   /// Alle Partien mit Lernstand als JSON-Text.
   Future<String> export() async {
@@ -76,6 +81,13 @@ class Backup {
       'format': exportFormat,
       'version': exportVersion,
       'exported': DateTime.now().toIso8601String(),
+      if (settings != null)
+        'accounts': {
+          if (settings!.lichessUser.isNotEmpty) 'lichess': settings!.lichessUser,
+          if (settings!.chesscomUser.isNotEmpty) 'chesscom': settings!.chesscomUser,
+          if (settings!.lichessSince != null) 'lichessSince': settings!.lichessSince,
+          if (settings!.chesscomSince != null) 'chesscomSince': settings!.chesscomSince,
+        },
       'games': games,
     });
   }
@@ -92,6 +104,19 @@ class Backup {
     if (data['format'] != exportFormat) throw const FormatException('Keine Schach-Mentor-Exportdatei');
     if ((data['version'] as int? ?? 0) > exportVersion) {
       throw const FormatException('Exportdatei stammt von einer neueren App-Version');
+    }
+    // Konten übernehmen, aber vorhandene Eingaben nie überschreiben
+    final acc = data['accounts'];
+    final st = settings;
+    if (acc is Map<String, dynamic> && st != null) {
+      if (st.lichessUser.isEmpty && acc['lichess'] is String) {
+        st.lichessUser = acc['lichess'] as String;
+        if (acc['lichessSince'] is int) st.lichessSince = acc['lichessSince'] as int;
+      }
+      if (st.chesscomUser.isEmpty && acc['chesscom'] is String) {
+        st.chesscomUser = acc['chesscom'] as String;
+        if (acc['chesscomSince'] is int) st.chesscomSince = acc['chesscomSince'] as int;
+      }
     }
     var added = 0, skipped = 0, invalid = 0, puzzles = 0;
     for (final raw in (data['games'] as List? ?? const [])) {

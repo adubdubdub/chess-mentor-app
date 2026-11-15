@@ -9,6 +9,7 @@ import 'package:flutter/services.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 
 import '../analysis/analysis.dart';
+import '../analysis/pgn_split.dart';
 import '../data/game_store.dart';
 import '../engine/analysis_service.dart';
 import '../data/backup.dart';
@@ -100,12 +101,17 @@ class _HomePageState extends State<HomePage> {
       _snack(msg);
       return;
     }
+    final many = splitPgn(pgn);
+    if (many.length > 1) {
+      await _importMany(many);
+      return;
+    }
     final parsed = ParsedGame.parse(pgn.trim());
     if (parsed == null) {
       _snack(tr.invalidPgn);
       return;
     }
-    var color = parsed.guessColor();
+    var color = parsed.guessColor(users: [scope.settings.lichessUser, scope.settings.chesscomUser]);
     final (id, isNew) = await scope.store.add(pgn.trim(), parsed, color);
     if (!isNew) {
       _snack(tr.alreadyThere);
@@ -117,6 +123,55 @@ class _HomePageState extends State<HomePage> {
     }
     await _reload();
     if (mounted) _open(id);
+  }
+
+  /// Mehrere Partien in einer Datei oder einem Text: alle anlegen, wo die Farbe klar ist, gleich analysieren.
+  Future<void> _importMany(List<String> pgns) async {
+    final scope = AppScope.of(context);
+    final tr = Tr.of(context);
+    final users = [scope.settings.lichessUser, scope.settings.chesscomUser];
+    var added = 0, known = 0, invalid = 0, unknownColor = 0;
+    for (final pgn in pgns) {
+      final parsed = ParsedGame.parse(pgn);
+      if (parsed == null) {
+        invalid++;
+        continue;
+      }
+      final color = parsed.guessColor(users: users);
+      final (id, isNew) = await scope.store.add(pgn, parsed, color);
+      if (!isNew) {
+        known++;
+        continue;
+      }
+      added++;
+      if (color == null) {
+        unknownColor++;
+      } else {
+        await scope.service.setColorAndAnalyse(id, color);
+      }
+    }
+    await _reload();
+    _snack(
+      tr.t(
+        '$added Partien übernommen${known > 0 ? ', $known schon vorhanden' : ''}${invalid > 0 ? ', $invalid nicht lesbar' : ''}'
+            '${unknownColor > 0 ? '. Bei $unknownColor Partien fehlt die Farbe, bitte in der Partie wählen' : ''}.',
+        '$added games imported${known > 0 ? ', $known already there' : ''}${invalid > 0 ? ', $invalid unreadable' : ''}'
+            '${unknownColor > 0 ? '. $unknownColor games need a side, please choose in the game' : ''}.',
+      ),
+    );
+  }
+
+  Future<void> _fetchOnline() async {
+    final tr = Tr.of(context);
+    final r = await AppScope.of(context).fetch.fetchNow();
+    await _reload();
+    _snack(
+      [
+        if (r.added > 0 || !r.hasErrors)
+          tr.t('${r.added} neue Partien geholt.', '${r.added} new games fetched.'),
+        ...r.errors,
+      ].join(' '),
+    );
   }
 
   void _openPuzzles() =>
@@ -189,6 +244,12 @@ class _HomePageState extends State<HomePage> {
       appBar: AppBar(
         title: Text(tr.appTitle),
         actions: [
+          if (AppScope.of(context).fetch.configured)
+            IconButton(
+              icon: const Icon(Icons.cloud_download),
+              tooltip: tr.t('Neue Online-Partien holen', 'Fetch new online games'),
+              onPressed: _fetchOnline,
+            ),
           IconButton(
             icon: const Icon(Icons.settings),
             tooltip: tr.t('Einstellungen', 'Settings'),

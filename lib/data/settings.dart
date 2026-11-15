@@ -28,6 +28,26 @@ class Settings extends ChangeNotifier {
   int get puzzlesPerDay => _prefs.getInt('puzzlesPerDay') ?? 5;
   set puzzlesPerDay(int v) => _set(() => _prefs.setInt('puzzlesPerDay', v));
 
+  /// Analysen im Hintergrund weiterrechnen (Vordergrunddienst mit Benachrichtigung, auch bei ausgeschaltetem Bildschirm).
+  bool get backgroundAnalysis => _prefs.getBool('backgroundAnalysis') ?? true;
+  set backgroundAnalysis(bool v) => _set(() => _prefs.setBool('backgroundAnalysis', v));
+
+  /// Benutzernamen für den Abruf von Online-Partien und Zeitpunkt (ms) der zuletzt geholten Partie je Dienst.
+  String get lichessUser => _prefs.getString('lichessUser') ?? '';
+  set lichessUser(String v) => _set(() => _prefs.setString('lichessUser', v.trim()));
+  String get chesscomUser => _prefs.getString('chesscomUser') ?? '';
+  set chesscomUser(String v) => _set(() => _prefs.setString('chesscomUser', v.trim()));
+  int? get lichessSince => _prefs.getInt('lichessSince');
+  set lichessSince(int? v) => _set(() => v == null ? _prefs.remove('lichessSince') : _prefs.setInt('lichessSince', v));
+  int? get chesscomSince => _prefs.getInt('chesscomSince');
+  set chesscomSince(int? v) => _set(() => v == null ? _prefs.remove('chesscomSince') : _prefs.setInt('chesscomSince', v));
+
+  /// Beim Start höchstens einmal am Tag abrufen.
+  bool get autoFetch => _prefs.getBool('autoFetch') ?? true;
+  set autoFetch(bool v) => _set(() => _prefs.setBool('autoFetch', v));
+  DateTime? get lastFetch => DateTime.tryParse(_prefs.getString('lastFetch') ?? '');
+  set lastFetch(DateTime? v) => _set(() => v == null ? _prefs.remove('lastFetch') : _prefs.setString('lastFetch', v.toIso8601String()));
+
   bool get reminders => _prefs.getBool('reminders') ?? true;
   set reminders(bool v) => _set(() => _prefs.setBool('reminders', v));
 

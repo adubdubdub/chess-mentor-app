@@ -3,6 +3,10 @@
     <uses-permission android:name="android.permission.INTERNET"/>
     <!-- Puzzle-Erinnerungen: nach Neustart neu planen -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+    <!-- Analyse im Hintergrund: Vordergrunddienst mit Fortschrittsbenachrichtigung -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC"/>
+    <uses-permission android:name="android.permission.WAKE_LOCK"/>
     <application
         android:allowBackup="false"
         android:label="Schach-Mentor"
@@ -46,6 +50,10 @@
                 <data android:scheme="content" android:mimeType="application/x-chess-pgn"/>
             </intent-filter>
         </activity>
+        <service
+            android:name="com.pravera.flutter_foreground_task.service.ForegroundService"
+            android:foregroundServiceType="dataSync"
+            android:exported="false" />
         <!-- Geplante Puzzle-Erinnerungen (flutter_local_notifications) -->
         <receiver android:exported="false" android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver" />
         <receiver android:exported="false" android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver">

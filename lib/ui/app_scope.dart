@@ -5,6 +5,7 @@ import '../ai/secrets.dart';
 import '../data/game_store.dart';
 import '../data/settings.dart';
 import '../engine/analysis_service.dart';
+import '../fetch/fetch_service.dart';
 import '../puzzles/reminders.dart';
 
 /// Gemeinsame Dienste für alle Seiten.
@@ -16,6 +17,7 @@ class AppScope extends InheritedWidget {
     required this.service,
     required this.reminders,
     required this.ai,
+    required this.fetch,
     required this.secrets,
     required super.child,
   });
@@ -25,6 +27,7 @@ class AppScope extends InheritedWidget {
   final AnalysisService service;
   final Reminders reminders;
   final MentorAi ai;
+  final FetchService fetch;
   final SecretStore secrets;
 
   static AppScope of(BuildContext context) => context.dependOnInheritedWidgetOfExactType<AppScope>()!;

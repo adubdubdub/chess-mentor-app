@@ -13,7 +13,7 @@ Future<String> importExportText(BuildContext context, String text) async {
   final tr = Tr.of(context);
   final scope = AppScope.of(context);
   try {
-    final r = await Backup(scope.store).import(text);
+    final r = await Backup(scope.store, settings: scope.settings).import(text);
     await scope.service.resume();
     return tr.t(
       '${r.added} Partien übernommen'
@@ -51,7 +51,7 @@ class _DataPageState extends State<DataPage> {
     });
     String msg;
     try {
-      final json = await Backup(scope.store).export();
+      final json = await Backup(scope.store, settings: scope.settings).export();
       final now = DateTime.now();
       final name =
           'schach-mentor-${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}.json';

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Einmalige Übernahme der Daten des Telegram-Bots (mentor.db) in eine Exportdatei der App.
 
-Aufruf: tools/bot_export.py /opt/chess-mentor/data/mentor.db ausgabe.json
+Aufruf: tools/bot_export.py /opt/chess-mentor/data/mentor.db ausgabe.json [Lichess-Benutzername]
 
 Übernommen werden Partien (PGN, Farbe, Datum), der Lernstand der Puzzles (Stufe, Fälligkeit, Wiederholungen) und die
 KI-Erklärungen der Besprechung. Die Analyse wird nicht übernommen: Die App rechnet sie neu und überträgt danach den
@@ -29,7 +29,7 @@ def review_texts(coach_json):
                              ensure_ascii=False)}
 
 
-def main(db_path, out_path):
+def main(db_path, out_path, lichess_user=None):
     con = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
     games = []
     for gid, pgn, color, created, coach in con.execute(
@@ -49,12 +49,18 @@ def main(db_path, out_path):
         })
     out = {"format": "schach-mentor-export", "version": 1, "exported": datetime.now().isoformat(timespec="seconds"),
            "games": games}
+    if lichess_user:
+        accounts = {"lichess": lichess_user}
+        since = con.execute("SELECT v FROM meta WHERE k = 'lichess_since'").fetchone()
+        if since and since[0].isdigit():
+            accounts["lichessSince"] = int(since[0])  # Millisekunden, damit die App nur neuere Partien holt
+        out["accounts"] = accounts
     with open(out_path, "w", encoding="utf-8") as f:
         json.dump(out, f, ensure_ascii=False, indent=1)
     print(f"{len(games)} Partien, {sum(len(g['puzzles']) for g in games)} Puzzle-Stände -> {out_path}")
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 3:
+    if len(sys.argv) not in (3, 4):
         sys.exit(__doc__)
     main(*sys.argv[1:])

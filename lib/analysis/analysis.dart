@@ -77,11 +77,11 @@ class ParsedGame {
   }
 
   /// Farbe des Nutzers: Lichess-Name oder ein erkennbarer Computer-Gegner; sonst null (nachfragen).
-  Side? guessColor({String lichessUser = ''}) {
-    final w = headers['White'] ?? '', b = headers['Black'] ?? '';
-    final user = lichessUser.toLowerCase();
-    if (user.isNotEmpty && w.toLowerCase() == user) return Side.white;
-    if (user.isNotEmpty && b.toLowerCase() == user) return Side.black;
+  Side? guessColor({Iterable<String> users = const []}) {
+    final w = (headers['White'] ?? '').toLowerCase(), b = (headers['Black'] ?? '').toLowerCase();
+    final names = {for (final u in users) if (u.trim().isNotEmpty) u.trim().toLowerCase()};
+    if (names.contains(w) && !names.contains(b)) return Side.white;
+    if (names.contains(b) && !names.contains(w)) return Side.black;
     if (_computer.hasMatch(b) && !_computer.hasMatch(w)) return Side.white;
     if (_computer.hasMatch(w) && !_computer.hasMatch(b)) return Side.black;
     return null;

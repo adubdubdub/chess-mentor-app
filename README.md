@@ -42,7 +42,8 @@ chess-mentor-app/
 │   ├── coach/           Texte des Mentors ohne Sprachmodell: Fragen, Tipps, Erklärungen, Lernpunkt
 │   ├── ai/              KI-Texte: Anbieter, Prompts, Prüfung gegen Engine-Fakten, Zwischenspeicher, Schlüssel (Keystore)
 │   ├── puzzles/         Wiederholungsplan (Stufen, Wertung), Folgezug zweizügiger Puzzles, Erinnerungen
-│   ├── engine/          Stockfish auf dem Handy (kleines/großes Netz), Netz-Download, Analyse-Warteschlange
+│   ├── engine/          Stockfish auf dem Handy (kleines/großes Netz), Netz-Download, Analyse-Warteschlange, Vordergrunddienst
+│   ├── fetch/           Online-Partien von Lichess und Chess.com per Benutzername
 │   ├── data/            Partien, Puzzles, Versuche und KI-Texte in SQLite, Einstellungen, Export/Import (backup.dart)
 │   ├── ui/              Partienliste, Import, Partie- und Momentansicht, Gewinnchance-Tabelle, Engine-Seite, Texte DE/EN
 │   └── main.dart
@@ -107,6 +108,33 @@ Ein Text wird einmal erzeugt und gespeichert (Schlüssel enthält Art, Id, Sprac
 Android-Keystore (`flutter_secure_storage`), nicht in den Einstellungen und nicht im Backup (`allowBackup` aus).
 **Heimserver ist nur für das eigene Handy gedacht**, weil das Abo persönlich ist; andere Nutzer verwenden Textbausteine
 oder einen eigenen Schlüssel.
+
+## 🌐 Online-Partien
+
+Einstellungen → „Online-Konten“: Benutzername für **Lichess** und **Chess.com** eintragen, kein Schlüssel nötig. Die App
+holt neue, beendete Standard-Partien über die öffentlichen Schnittstellen (`lib/fetch/`), legt sie an und analysiert sie
+automatisch. Die Farbe ergibt sich aus dem Benutzernamen.
+
+| | Lichess | Chess.com |
+|---|---|---|
+| Schnittstelle | `/api/games/user/<name>` (PGN) | `/pub/player/<name>/games/archives`, dann Monatsarchive |
+| Filter | nur Standard-Zeitkontrollen, keine Varianten | nur `rules = chess` |
+| „Seit“ | Startzeit der zuletzt geholten Partie | Endzeit der zuletzt geholten Partie |
+
+- Erster Abruf: letzte 7 Tage, danach nur neue, höchstens 30 je Abruf. Beim Start höchstens einmal in 20 Stunden
+  (abschaltbar), außerdem „Jetzt abrufen“ und das Wolken-Symbol in der Partieliste.
+- Beide Dienste verlangen eine eigene Kennung im `User-Agent` (ohne sie antwortet Lichess mit 404).
+- Eine Datei oder ein Text mit **mehreren Partien** (Lichess-Export, Sammel-PGN) wird beim Import in einzelne Partien
+  zerlegt; wo die Farbe nicht klar ist, wählst du sie in der Partie.
+- Die Benutzernamen gehören zum Export (kein Passwort) und werden beim Import nur eingetragen, wenn noch keiner steht.
+
+## 🔋 Analyse im Hintergrund
+
+Mit „Analyse im Hintergrund“ (Standard: an) läuft während einer Analyse ein Android-Vordergrunddienst
+(`lib/engine/background.dart`, `flutter_foreground_task`, Typ `dataSync`). Er hält den Prozess und einen Wake-Lock und
+zeigt den Fortschritt („Partie 2 von 7 · 35 %“) als Benachrichtigung; die Analyse selbst läuft weiter in der App.
+Ausgeschaltet bleibt der Bildschirm während der Analyse an. Android 13 und neuer braucht die Erlaubnis für
+Benachrichtigungen, sonst läuft der Dienst ohne sichtbare Anzeige.
 
 ## 💾 Export und Import
 
@@ -195,7 +223,7 @@ adb install -r build/app/outputs/flutter-apk/app-release.apk
   Vielfaches langsamer (ca. 25 s statt 0,7 s je Stellung).
 - Mehr Threads machen die Analyse bei fester Tiefe nicht schneller (Pixel 6, kleines Netz: 4 Threads 1,28 s, 1 Thread
   0,73 s; großes Netz: 3,35 s gegenüber 1,26 s).
-- Bei ausgeschaltetem Bildschirm pausiert Android die Engine; die App hält ihn während einer Analyse wach.
+- Bei ausgeschaltetem Bildschirm pausiert Android die Engine; deshalb gibt es den Vordergrunddienst (siehe Analyse im Hintergrund) oder, ausgeschaltet, einen wachgehaltenen Bildschirm. Ob der Dienst die Engine auf allen Geräten zuverlässig am Laufen hält, ist noch am Handy zu prüfen.
 - Die App-ID `io.github.adubdubdub.schachmentor` ist nach der ersten Weitergabe nicht mehr änderbar.
 - KI-Antworten sind nicht deterministisch: Ein Text kann bei einem Aufruf die Prüfung bestehen und beim nächsten nicht. Darum zählt immer der Rückfall.
 
@@ -209,7 +237,7 @@ adb install -r build/app/outputs/flutter-apk/app-release.apk
 - [x] **Schritt 2:** Puzzles: Versuche speichern ✅, Aufstieg nur im ersten Versuch ohne Tipp ✅, zweizügige Puzzles ✅ (Folgezug wird beim Lösen auf Eindeutigkeit geprüft, Abstand ≥ 15 Prozentpunkte)
 - [ ] **Schritt 3:** KI-Texte: Heimserver (Claude Code über das KI-Gateway) und eigener Schlüssel, mit Zugprüfung (Puzzle und Besprechung; offen: Test auf dem Handy, optional Anthropic direkt)
 - [ ] **Schritt 4:** Export/Import und Übernahme der Bot-Daten (umgesetzt und per Unit-Tests geprüft; offen: Test auf dem Handy mit den echten Bot-Daten)
-- [ ] **Schritt 5:** Abruf per Benutzername (Lichess, Chess.com), mehrere Partien je PGN
+- [ ] **Schritt 5:** Abruf per Benutzername (Lichess, Chess.com), mehrere Partien je PGN (umgesetzt und per Unit-Tests und Live-Abruf geprüft; offen: Test auf dem Handy)
 - [ ] **Schritt 6:** Schwächenprofil und Wochenfokus
 - [ ] **Schritt 7:** Erste Weitergabe an Familie und Freunde (GitHub Releases, Obtainium)
 - [ ] **Schritt 8:** F-Droid: Übersetzungsdateien, Barrierefreiheit, Datenschutzhinweis

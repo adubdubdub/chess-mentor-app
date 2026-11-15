@@ -6,6 +6,7 @@ import '../analysis/chess_utils.dart';
 import '../data/settings.dart';
 import '../engine/mobile_engine.dart';
 import '../engine/net_manager.dart';
+import 'accounts_page.dart';
 import 'ai_page.dart';
 import 'data_page.dart';
 import 'app_scope.dart';
@@ -130,6 +131,18 @@ class _EnginePageState extends State<EnginePage> {
           children: [
             ListTile(
               contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.cloud_download),
+              title: Text(tr.t('Online-Konten', 'Online accounts')),
+              subtitle: Text(
+                settings.lichessUser.isEmpty && settings.chesscomUser.isEmpty
+                    ? tr.t('Lichess und Chess.com per Benutzername', 'Lichess and Chess.com by user name')
+                    : [settings.lichessUser, settings.chesscomUser].where((u) => u.isNotEmpty).join(' · '),
+              ),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const AccountsPage())),
+            ),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
               leading: const Icon(Icons.auto_awesome),
               title: Text(tr.t('KI-Texte', 'AI texts')),
               subtitle: Text(switch (settings.aiMode) {
@@ -224,6 +237,18 @@ class _EnginePageState extends State<EnginePage> {
               ],
               selected: {settings.puzzlesPerDay},
               onSelectionChanged: (s) => settings.puzzlesPerDay = s.first,
+            ),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(tr.t('Analyse im Hintergrund', 'Analyse in the background')),
+              subtitle: Text(
+                tr.t(
+                  'Rechnet auch bei ausgeschaltetem Bildschirm weiter und zeigt den Fortschritt als Benachrichtigung',
+                  'Keeps going with the screen off and shows progress as a notification',
+                ),
+              ),
+              value: settings.backgroundAnalysis,
+              onChanged: (v) => settings.backgroundAnalysis = v,
             ),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,

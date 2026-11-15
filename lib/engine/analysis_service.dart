@@ -11,6 +11,7 @@ import '../analysis/analysis.dart';
 import '../analysis/uci.dart';
 import '../data/game_store.dart';
 import '../data/settings.dart';
+import 'background.dart';
 import 'mobile_engine.dart';
 import 'net_manager.dart';
 
@@ -28,6 +29,9 @@ class AnalysisService extends ChangeNotifier {
   (EngineNet, int)? _engineConfig;
   final _queue = <int>[];
   bool _running = false;
+  final _notice = BackgroundNotice();
+  int _doneGames = 0;
+  DateTime _lastNotice = DateTime.fromMillisecondsSinceEpoch(0);
 
   /// Fortschritt der laufenden Analyse: Partie-id → (bewertete Stellungen, alle Stellungen).
   final progress = <int, (int, int)>{};
@@ -77,8 +81,10 @@ class AnalysisService extends ChangeNotifier {
   Future<void> _run() async {
     if (_running) return;
     _running = true;
-    // Bildschirm wach halten: Bei ausgeschaltetem Bildschirm pausiert Android die Engine (Test 08.11.2026)
-    await WakelockPlus.enable();
+    // Bei ausgeschaltetem Bildschirm pausiert Android die Engine (Test 08.11.2026): entweder Vordergrunddienst
+    // (Einstellung „Analyse im Hintergrund“) oder Bildschirm wach halten.
+    if (!settings.backgroundAnalysis) await WakelockPlus.enable();
+    _doneGames = 0;
     try {
       while (_queue.isNotEmpty) {
         final id = _queue.removeAt(0);
@@ -92,6 +98,7 @@ class AnalysisService extends ChangeNotifier {
         await store.setStatus(id, GameStatus.analysing);
         progress[id] = (0, parsed.moves.length + 1);
         notifyListeners();
+        await _showProgress(id, force: true);
         try {
           final engine = await _ensureEngine();
           final result = await analyseGame(
@@ -103,6 +110,7 @@ class AnalysisService extends ChangeNotifier {
             onProgress: (done, total) {
               progress[id] = (done, total);
               notifyListeners();
+              _showProgress(id);
             },
           );
           await store.setAnalysis(id, result);
@@ -111,12 +119,30 @@ class AnalysisService extends ChangeNotifier {
           await store.setStatus(id, GameStatus.error, error: e.toString());
         }
         progress.remove(id);
+        _doneGames++;
         notifyListeners();
       }
     } finally {
       _running = false;
+      await _notice.stop();
       await WakelockPlus.disable();
     }
+  }
+
+  /// Fortschritt als Benachrichtigung des Vordergrunddienstes (höchstens einmal pro Sekunde), falls eingeschaltet.
+  Future<void> _showProgress(int id, {bool force = false}) async {
+    if (!settings.backgroundAnalysis) return;
+    final now = DateTime.now();
+    if (!force && now.difference(_lastNotice) < const Duration(seconds: 1)) return;
+    _lastNotice = now;
+    final (done, total) = progress[id] ?? (0, 1);
+    final percent = total == 0 ? 0 : (100 * done / total).round();
+    final games = _doneGames + _queue.length + 1;
+    final de = PlatformDispatcher.instance.locale.languageCode == 'de';
+    await _notice.show(
+      de ? 'Schach-Mentor analysiert' : 'Chess Mentor is analysing',
+      de ? 'Partie ${_doneGames + 1} von $games · $percent %' : 'Game ${_doneGames + 1} of $games · $percent %',
+    );
   }
 
   /// Nach einem App-Neustart liegengebliebene Analysen wieder aufnehmen.

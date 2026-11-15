@@ -55,7 +55,7 @@ void main() {
     expect(g('Anonymous', 'Stockfish level 3').guessColor(), Side.white);
     expect(g('Computer', 'Anonymous').guessColor(), Side.black);
     expect(g('Anonymous', 'Anonymous').guessColor(), isNull);
-    expect(g('adubdubdub', 'x').guessColor(lichessUser: 'AdubDubDub'), Side.white);
+    expect(g('adubdubdub', 'x').guessColor(users: ['AdubDubDub']), Side.white);
   });
 
   test('Ungültige PGN', () {
