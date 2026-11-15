@@ -46,7 +46,7 @@ String _json(Map<String, String> m) => jsonEncode({
   'zusammenfassung': m['sum'] ?? 'Gute Partie.',
   'lernpunkt': m['learn'] ?? 'Prüfe Schachgebote.',
   'momente': [
-    {'ply': 12, 'frage': m['q'] ?? 'Was droht auf f7?', 'tipp': m['tip'] ?? 'Schau auf die Dame.', 'erklaerung': m['exp'] ?? 'Nach 6...Sxe4 steht es schlechter.'},
+    {'ply': 12, 'frage': m['q'] ?? 'Welche Schwächen hat der schwarze König?', 'tipp': m['tip'] ?? 'Schau auf die Dame.', 'erklaerung': m['exp'] ?? 'Nach 6...Sxe4 steht es schlechter.'},
   ],
 });
 
@@ -54,7 +54,7 @@ void main() {
   test('brauchbare Antwort wird übernommen', () {
     final t = parseReview(_json({}), _analysis(), de: true)!;
     expect(t.summary, 'Gute Partie.');
-    expect(t.moments[12]!.question, 'Was droht auf f7?');
+    expect(t.moments[12]!.question, 'Welche Schwächen hat der schwarze König?');
     expect(t.moments[12]!.explanation, isNotNull);
   });
 
@@ -62,6 +62,14 @@ void main() {
     final t = parseReview(_json({'q': 'Spielst du Dxf7?', 'tip': 'Dxf7 gewinnt.'}), _analysis(), de: true)!;
     expect(t.moments[12]!.question, isNull);
     expect(t.moments[12]!.tip, isNull);
+  });
+
+  test('Zielfeld des besten Zugs in Frage oder Tipp gilt als Verrat', () {
+    final t = parseReview(_json({'q': 'Schau dir den Bauern auf f7 an.', 'tip': 'Achte auf die Königsstellung.'}), _analysis(), de: true)!;
+    expect(t.moments[12]!.question, isNull);
+    expect(t.moments[12]!.tip, 'Achte auf die Königsstellung.');
+    final ok = parseReview(_json({'q': 'Welche Schwächen hat der schwarze König?'}), _analysis(), de: true)!;
+    expect(ok.moments[12]!.question, isNotNull);
   });
 
   test('erfundene Züge verwerfen nur das betroffene Feld', () {

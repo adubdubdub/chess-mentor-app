@@ -6,7 +6,7 @@ import 'dart:convert';
 import '../analysis/analysis.dart';
 import '../analysis/chess_utils.dart';
 
-const promptVersion = 1;
+const promptVersion = 2;
 
 const defaultLevel = 'ca. 1200 Elo, zwischen Einsteiger und Fortgeschritten';
 
@@ -110,6 +110,11 @@ Regeln:
 - "frage": regt zum Nachdenken an, ohne den besten Zug zu verraten (z. B. auf eine Drohung, eine ungedeckte
   Figur oder einen Plan lenken). Höchstens 2 Sätze.
 - "tipp": ein konkreterer Hinweis, verrät den Zug aber noch nicht. 1 Satz.
+- STRENG für "frage" und "tipp": Nenne weder den besten Zug noch das Zielfeld des besten Zugs, und sage nicht,
+  welche Figur ziehen oder schlagen soll. Lenke nur auf das Thema (z. B. "Gibt es ein Schachgebot?", "Welche
+  gegnerische Figur ist schlecht geschützt?", "Wie sicher steht der gegnerische König?"), ohne Feld und Figur
+  zu verbinden. Beispiel schlecht: "Kann deine Dame den Bauern auf f7 schlagen?" Besser: "Welche Schwächen
+  hat die gegnerische Königsstellung?"
 - "erklaerung": warum der Partiezug schwach war (Antwort des Gegners aus "reply_line") und was der beste Zug
   erreicht ("best_line"). Höchstens 4 Sätze. Keine Prozentzahlen.
 - "zusammenfassung": 2–3 Sätze zur ganzen Partie, ermutigend und ehrlich.
@@ -135,6 +140,10 @@ Rules:
 - Address the student as "you", simple language, no engine numbers except "clearly better" or similar.
 - "frage": makes them think without giving away the best move (point to a threat, a loose piece or a plan). At most 2 sentences.
 - "tipp": a more concrete hint that still does not give away the move. 1 sentence.
+- STRICT for "frage" and "tipp": name neither the best move nor its target square, and do not say which piece should
+  move or capture. Point only to the theme (e.g. "Is there a check?", "Which enemy piece is poorly protected?",
+  "How safe is the enemy king?") without combining a square and a piece. Bad example: "Can your queen take the pawn
+  on f7?" Better: "What weaknesses does the enemy king position have?"
 - "erklaerung": why the game move was weak (the opponent's reply from "reply_line") and what the best move achieves
   ("best_line"). At most 4 sentences. No percentages.
 - "zusammenfassung": 2-3 sentences on the whole game, encouraging and honest.

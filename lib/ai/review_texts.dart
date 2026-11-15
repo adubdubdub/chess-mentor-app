@@ -77,7 +77,10 @@ ReviewTexts? parseReview(String raw, GameAnalysis a, {required bool de}) {
     final best = de ? germanSan(m.best) : m.best;
     String? hidden(Object? v) {
       final t = ok(v);
-      return t == null || revealsMove(t, best) || revealsMove(t, m.best) ? null : t;
+      if (t == null || revealsMove(t, best) || revealsMove(t, m.best)) return null;
+      // Auch das Zielfeld des besten Zugs gilt als Verrat („Dame auf f7 schlagen“)
+      final target = m.bestUci.substring(2, 4);
+      return RegExp('(^|[^a-h0-9])$target(?![0-9])').hasMatch(t) ? null : t;
     }
 
     moments[m.ply] = MomentTexts(
