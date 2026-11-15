@@ -5,6 +5,7 @@ import '../mentor/focus_keeper.dart';
 import '../mentor/profile.dart';
 import '../mentor/topic_texts.dart';
 import 'strings.dart';
+import 'topic_info_sheet.dart';
 
 /// Die Karte „Wochenfokus“ oben auf der Mentor-Seite: Vorschlag mit Wahl, laufender Fokus mit Stand, Ergebnis.
 class FocusCard extends StatelessWidget {
@@ -60,7 +61,16 @@ class FocusCard extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('🎯 ${tr.t('Wochenfokus', 'Weekly focus')}: ${tr.topicName(f.topic)}', style: theme.textTheme.titleMedium),
+        Row(
+          children: [
+            Expanded(child: Text('🎯 ${tr.t('Wochenfokus', 'Weekly focus')}: ${tr.topicName(f.topic)}', style: theme.textTheme.titleMedium)),
+            IconButton(
+              icon: const Icon(Icons.info_outline),
+              tooltip: tr.t('Erklärung und Tipps', 'Explanation and tips'),
+              onPressed: () => showTopicInfo(context, f.topic),
+            ),
+          ],
+        ),
         const SizedBox(height: 8),
         Text(tr.topicRule(f.topic)),
         const SizedBox(height: 8),
@@ -140,7 +150,16 @@ class FocusCard extends StatelessWidget {
         _result(tr, theme),
         Text('🎯 ${tr.t('Vorschlag für deinen Wochenfokus', 'Suggested weekly focus')}', style: theme.textTheme.titleMedium),
         const SizedBox(height: 8),
-        Text(tr.topicName(first.topic), style: theme.textTheme.titleLarge),
+        Row(
+          children: [
+            Expanded(child: Text(tr.topicName(first.topic), style: theme.textTheme.titleLarge)),
+            IconButton(
+              icon: const Icon(Icons.info_outline),
+              tooltip: tr.t('Erklärung und Tipps', 'Explanation and tips'),
+              onPressed: () => showTopicInfo(context, first.topic),
+            ),
+          ],
+        ),
         Text(tr.topicHint(first.topic)),
         const SizedBox(height: 6),
         Text(
@@ -167,9 +186,19 @@ class FocusCard extends StatelessWidget {
               dense: true,
               title: Text(tr.topicName(s.topic)),
               subtitle: Text(tr.t('${s.stat.count}× in ${s.stat.games} Partien', '${s.stat.count}× in ${s.stat.games} games')),
-              trailing: OutlinedButton(
-                onPressed: onStart == null ? null : () => onStart!(s),
-                child: Text(tr.t('Wählen', 'Choose')),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.info_outline),
+                    tooltip: tr.t('Erklärung und Tipps', 'Explanation and tips'),
+                    onPressed: () => showTopicInfo(context, s.topic),
+                  ),
+                  OutlinedButton(
+                    onPressed: onStart == null ? null : () => onStart!(s),
+                    child: Text(tr.t('Wählen', 'Choose')),
+                  ),
+                ],
               ),
             ),
         ],

@@ -101,7 +101,7 @@ class Profile {
   final double? accuracy;
 
   /// Genauigkeit je Partie, älteste zuerst.
-  final List<({DateTime at, int accuracy})> accuracySeries;
+  final List<({DateTime at, int accuracy, int gameId, String title})> accuracySeries;
 
   /// Fehlzüge nach Schwere (Ungenauigkeit, Fehler, Patzer).
   final Map<MistakeClass, int> counts;
@@ -140,12 +140,12 @@ Profile buildProfile(List<GameRecord> records, {int window = profileWindow, int 
   final ownMoves = moves(games);
   final counts = {for (final c in MistakeClass.values) c: 0};
   final accuracies = <int>[];
-  final series = <({DateTime at, int accuracy})>[];
+  final series = <({DateTime at, int accuracy, int gameId, String title})>[];
   for (final g in games.reversed) {
     final a = g.analysis.accuracy;
     if (a != null) {
       accuracies.add(a);
-      series.add((at: g.playedAt, accuracy: a));
+      series.add((at: g.playedAt, accuracy: a, gameId: g.id, title: '${g.analysis.white} – ${g.analysis.black}'));
     }
   }
 

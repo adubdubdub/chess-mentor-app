@@ -58,6 +58,13 @@ Widget _wrap(Widget child) => MaterialApp(
   home: Scaffold(body: child),
 );
 
+/// Hohes Fenster, damit die ganze Liste gebaut wird (ListView baut nur Sichtbares).
+void _tall(WidgetTester tester) {
+  tester.view.physicalSize = const Size(800, 3200);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.reset);
+}
+
 void main() {
   testWidgets('leeres Profil zeigt einen Hinweis statt Zahlen', (tester) async {
     await tester.pumpWidget(_wrap(ProfileView(profile: buildProfile(const []))));
@@ -65,6 +72,7 @@ void main() {
   });
 
   testWidgets('wenig Daten: Hinweis und Themen abgeblendet mit Erklärung', (tester) async {
+    _tall(tester);
     final p = buildProfile([_game(0, [_m(10, ['wins_material'])]), _game(1, const [])]);
     await tester.pumpWidget(_wrap(ProfileView(profile: p)));
     expect(find.textContaining('Noch zu wenig Daten'), findsOneWidget);
@@ -73,6 +81,7 @@ void main() {
   });
 
   testWidgets('genug Daten: Thema mit Zahlen, Antippen meldet das Thema', (tester) async {
+    _tall(tester);
     final games = [for (var i = 0; i < 6; i++) _game(i, [_m(10, ['wins_material']), _m(20, ['best_is_check'], drop: 11)])];
     Topic? tapped;
     await tester.pumpWidget(_wrap(ProfileView(profile: buildProfile(games), onTopic: (t) => tapped = t)));

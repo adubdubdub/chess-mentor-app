@@ -11,6 +11,7 @@ import 'focus_card.dart';
 import 'puzzle_page.dart';
 import 'game_page.dart';
 import 'profile_view.dart';
+import 'topic_info_sheet.dart';
 import 'strings.dart';
 
 /// Der Mentor: Schwächenprofil über die letzten Partien.
@@ -82,6 +83,7 @@ class _MentorPageState extends State<MentorPage> {
           ? const Center(child: CircularProgressIndicator())
           : ProfileView(
               profile: _profile(records),
+              onGame: (id) => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => GamePage(id: id))),
               header: records.isEmpty ? null : _card(context, records),
               onTopic: (t) => Navigator.of(context).push(
                 MaterialPageRoute<void>(builder: (_) => TopicPage(topic: t, records: records)),
@@ -104,7 +106,16 @@ class TopicPage extends StatelessWidget {
     final theme = Theme.of(context);
     final items = topicMoments(topic, records);
     return Scaffold(
-      appBar: AppBar(title: Text(tr.topicName(topic))),
+      appBar: AppBar(
+        title: Text(tr.topicName(topic)),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.info_outline),
+            tooltip: tr.t('Erklärung und Tipps', 'Explanation and tips'),
+            onPressed: () => showTopicInfo(context, topic),
+          ),
+        ],
+      ),
       body: ListView(
         children: [
           Padding(padding: const EdgeInsets.all(16), child: Text(tr.topicHint(topic))),
@@ -122,7 +133,9 @@ class TopicPage extends StatelessWidget {
                 style: theme.textTheme.bodySmall,
               ),
               trailing: const Icon(Icons.chevron_right),
-              onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => GamePage(id: game.id))),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(builder: (_) => MomentPage(moment: moment, orientation: game.analysis.color)),
+              ),
             ),
         ],
       ),

@@ -1,19 +1,26 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../analysis/analysis.dart';
 import '../mentor/profile.dart';
 import '../mentor/topic_texts.dart';
 import '../mentor/topics.dart';
+import 'accuracy_chart.dart';
 import 'strings.dart';
+import 'topic_info_sheet.dart';
 
 /// Darstellung des Schwächenprofils (reine Anzeige, bekommt fertige Daten).
 class ProfileView extends StatelessWidget {
-  const ProfileView({super.key, required this.profile, this.onTopic, this.header});
+  const ProfileView({super.key, required this.profile, this.onTopic, this.onGame, this.header});
 
   final Profile profile;
 
   /// Antippen eines Themas (Liste der zugehörigen Fehlzüge).
   final void Function(Topic topic)? onTopic;
+
+  /// „Partie öffnen“ im Genauigkeitsdiagramm.
+  final void Function(int gameId)? onGame;
 
   /// Wird über den Kennzahlen angezeigt (z. B. die Fokuskarte); fehlt bei leerem Profil.
   final Widget? header;
@@ -37,7 +44,9 @@ class ProfileView extends StatelessWidget {
         ),
       );
     }
-    final maxRate = p.topics.fold<double>(0, (a, t) => t.per100 > a ? t.per100 : a);
+    // Balken nie bis zum Rand: Skala mit Luft nach oben, mindestens 10 je 100 Züge
+    final topicScale = barScale(p.topics.fold<double>(0, (a, t) => t.per100 > a ? t.per100 : a));
+    final phaseScale = barScale(p.phases.fold<double>(0, (a, x) => x.per100 > a ? x.per100 : a));
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -51,21 +60,14 @@ class ProfileView extends StatelessWidget {
               label: tr.t('Genauigkeit', 'Accuracy'),
               value: p.accuracy == null ? '–' : '${p.accuracy!.round()} %',
             ),
-            for (final c in MistakeClass.values.reversed)
-              _Figure(label: tr.mistake(c), value: '${p.counts[c] ?? 0}'),
+            for (final c in MistakeClass.values.reversed) _Figure(label: tr.mistake(c), value: '${p.counts[c] ?? 0}'),
           ],
         ),
         if (p.accuracySeries.length >= 2) ...[
-          const SizedBox(height: 16),
-          Text(tr.t('Genauigkeit je Partie', 'Accuracy per game'), style: theme.textTheme.titleSmall),
+          const SizedBox(height: 20),
+          Text(tr.t('Genauigkeit je Partie', 'Accuracy per game'), style: theme.textTheme.titleMedium),
           const SizedBox(height: 8),
-          SizedBox(
-            height: 80,
-            child: CustomPaint(
-              painter: _Sparkline([for (final s in p.accuracySeries) s.accuracy.toDouble()], theme.colorScheme.primary),
-              size: Size.infinite,
-            ),
-          ),
+          AccuracyChart(series: p.accuracySeries, onOpen: onGame),
         ],
         if (!p.enough) ...[
           const SizedBox(height: 16),
@@ -99,7 +101,7 @@ class ProfileView extends StatelessWidget {
           Text(tr.t('Keine Fehlzüge mit erkennbarem Thema.', 'No mistakes with a recognisable topic.'))
         else
           for (final t in p.topics)
-            _TopicTile(stat: t, maxRate: maxRate, onTap: onTopic == null ? null : () => onTopic!(t.topic)),
+            _TopicTile(stat: t, scale: topicScale, onTap: onTopic == null ? null : () => onTopic!(t.topic)),
         if (p.untagged > 0)
           Padding(
             padding: const EdgeInsets.only(top: 4),
@@ -116,15 +118,18 @@ class ProfileView extends StatelessWidget {
           Text(tr.t('Spielphasen', 'Game phases'), style: theme.textTheme.titleMedium),
           const SizedBox(height: 8),
           for (final ph in p.phases)
-            _BarRow(
-              label: tr.phase(ph.phase),
-              value: ph.per100,
-              max: p.phases.fold<double>(0, (a, x) => x.per100 > a ? x.per100 : a),
-              trailing: tr.t(
-                '${ph.mistakes} Fehlzüge bei ${ph.moves} Zügen',
-                '${ph.mistakes} mistakes in ${ph.moves} moves',
+            Padding(
+              padding: const EdgeInsets.only(bottom: 14),
+              child: _BarRow(
+                label: tr.phase(ph.phase),
+                value: ph.per100,
+                max: phaseScale,
+                trailing: tr.t(
+                  '${ph.mistakes} Fehlzüge bei ${ph.moves} Zügen',
+                  '${ph.mistakes} mistakes in ${ph.moves} moves',
+                ),
+                color: theme.colorScheme.tertiary,
               ),
-              color: theme.colorScheme.tertiary,
             ),
         ],
         if (p.openings.isNotEmpty) ...[
@@ -170,7 +175,10 @@ class _Figure extends StatelessWidget {
     return Container(
       width: 96,
       padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-      decoration: BoxDecoration(color: theme.colorScheme.surfaceContainerHighest, borderRadius: BorderRadius.circular(12)),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -183,10 +191,12 @@ class _Figure extends StatelessWidget {
 }
 
 class _TopicTile extends StatelessWidget {
-  const _TopicTile({required this.stat, required this.maxRate, this.onTap});
+  const _TopicTile({required this.stat, required this.scale, this.onTap});
 
   final TopicStat stat;
-  final double maxRate;
+
+  /// Wert, der einem vollen Balken entspricht.
+  final double scale;
   final VoidCallback? onTap;
 
   @override
@@ -202,39 +212,67 @@ class _TopicTile extends StatelessWidget {
         : trend > 0.3
         ? ' · ↗ ${tr.t('schlechter', 'worse')}'
         : ' · → ${tr.t('gleich', 'same')}';
-    return Opacity(
-      opacity: t.enough ? 1 : 0.55,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 6),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _BarRow(
-                label: tr.topicName(t.topic),
-                value: t.per100,
-                max: maxRate,
-                trailing: tr.t('${t.count}× in ${t.games} Partien', '${t.count}× in ${t.games} games'),
-                color: t.enough ? theme.colorScheme.primary : theme.colorScheme.outline,
-              ),
-              Padding(
-                padding: const EdgeInsets.only(top: 2),
-                child: Text(
-                  [
-                    tr.t('Ø-Verlust ${t.avgDrop.round()} Punkte', 'avg. loss ${t.avgDrop.round()} points'),
-                    if (t.puzzles > 0) tr.t('Puzzles ${t.mastered}/${t.puzzles} gemeistert', 'puzzles ${t.mastered}/${t.puzzles} mastered'),
-                  ].join(' · ') + trendText,
-                  style: theme.textTheme.bodySmall,
+    return Card(
+      elevation: 0,
+      margin: const EdgeInsets.only(bottom: 10),
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Opacity(
+        opacity: t.enough ? 1 : 0.6,
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(14, 10, 4, 10),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _BarRow(
+                        label: tr.topicName(t.topic),
+                        value: t.per100,
+                        max: scale,
+                        trailing: tr.t('${t.count}× in ${t.games} Partien', '${t.count}× in ${t.games} games'),
+                        color: t.enough ? theme.colorScheme.primary : theme.colorScheme.outline,
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 2),
+                        child: Text(
+                          [
+                                tr.t('Ø-Verlust ${t.avgDrop.round()} Punkte', 'avg. loss ${t.avgDrop.round()} points'),
+                                if (t.puzzles > 0)
+                                  tr.t(
+                                    'Puzzles ${t.mastered}/${t.puzzles} gemeistert',
+                                    'puzzles ${t.mastered}/${t.puzzles} mastered',
+                                  ),
+                              ].join(' · ') +
+                              trendText,
+                          style: theme.textTheme.bodySmall,
+                        ),
+                      ),
+                      if (!t.enough)
+                        Text(
+                          tr.t(
+                            'Noch kein Muster (zu wenige Vorkommen oder Partien).',
+                            'No pattern yet (too few occurrences or games).',
+                          ),
+                          style: theme.textTheme.bodySmall?.copyWith(fontStyle: FontStyle.italic),
+                        ),
+                    ],
+                  ),
                 ),
-              ),
-              if (!t.enough)
-                Text(
-                  tr.t('Noch kein Muster (zu wenige Vorkommen oder Partien).', 'No pattern yet (too few occurrences or games).'),
-                  style: theme.textTheme.bodySmall?.copyWith(fontStyle: FontStyle.italic),
+                IconButton(
+                  icon: const Icon(Icons.info_outline),
+                  tooltip: tr.t('Erklärung und Tipps', 'Explanation and tips'),
+                  onPressed: () => showTopicInfo(context, t.topic),
                 ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -243,7 +281,13 @@ class _TopicTile extends StatelessWidget {
 }
 
 class _BarRow extends StatelessWidget {
-  const _BarRow({required this.label, required this.value, required this.max, required this.trailing, required this.color});
+  const _BarRow({
+    required this.label,
+    required this.value,
+    required this.max,
+    required this.trailing,
+    required this.color,
+  });
 
   final String label;
   final double value;
@@ -279,35 +323,6 @@ class _BarRow extends StatelessWidget {
   }
 }
 
-class _Sparkline extends CustomPainter {
-  _Sparkline(this.values, this.color);
-
-  final List<double> values;
-  final Color color;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (values.length < 2) return;
-    final lo = values.reduce((a, b) => a < b ? a : b) - 5;
-    final hi = values.reduce((a, b) => a > b ? a : b) + 5;
-    final span = hi - lo == 0 ? 1 : hi - lo;
-    Offset at(int i) => Offset(size.width * i / (values.length - 1), size.height * (1 - (values[i] - lo) / span));
-    final path = Path()..moveTo(at(0).dx, at(0).dy);
-    for (var i = 1; i < values.length; i++) {
-      path.lineTo(at(i).dx, at(i).dy);
-    }
-    canvas.drawPath(
-      path,
-      Paint()
-        ..color = color
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2,
-    );
-    for (var i = 0; i < values.length; i++) {
-      canvas.drawCircle(at(i), 3, Paint()..color = color);
-    }
-  }
-
-  @override
-  bool shouldRepaint(_Sparkline old) => old.values != values || old.color != color;
-}
+/// Wert, der einem vollen Balken entspricht: 40 % über dem größten Wert, auf 5 gerundet, mindestens 10.
+/// Damit füllt auch der größte Balken nie die ganze Breite.
+double barScale(double max) => math.max(10.0, (max * 1.4 / 5).ceil() * 5.0);
