@@ -8,12 +8,15 @@ import 'strings.dart';
 
 /// Darstellung des Schwächenprofils (reine Anzeige, bekommt fertige Daten).
 class ProfileView extends StatelessWidget {
-  const ProfileView({super.key, required this.profile, this.onTopic});
+  const ProfileView({super.key, required this.profile, this.onTopic, this.header});
 
   final Profile profile;
 
   /// Antippen eines Themas (Liste der zugehörigen Fehlzüge).
   final void Function(Topic topic)? onTopic;
+
+  /// Wird über den Kennzahlen angezeigt (z. B. die Fokuskarte); fehlt bei leerem Profil.
+  final Widget? header;
 
   @override
   Widget build(BuildContext context) {
@@ -38,6 +41,7 @@ class ProfileView extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
+        if (header != null) ...[header!, const SizedBox(height: 16)],
         Wrap(
           spacing: 12,
           runSpacing: 12,

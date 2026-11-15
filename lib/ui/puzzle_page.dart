@@ -75,10 +75,13 @@ class _PuzzlePageState extends State<PuzzlePage> {
     final scope = AppScope.of(context);
     final stats = await scope.store.puzzleStats();
     final left = scope.settings.puzzlesPerDay - stats.doneToday;
+    // Puzzles zum Thema des laufenden Wochenfokus kommen zuerst
+    final running = await scope.store.activeFocus();
+    final focus = running != null && DateTime.now().isBefore(running.endsAt) ? running.topic : null;
     final due = _early
         ? [?await scope.store.nextPuzzle()]
         : left > 0
-        ? await scope.store.duePuzzles(limit: 1)
+        ? await scope.store.duePuzzles(limit: 1, focus: focus)
         : <StoredPuzzle>[];
     if (!mounted) return;
     setState(() {

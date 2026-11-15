@@ -36,4 +36,47 @@ extension TopicTexts on Tr {
       'You were already worse and lost more winning chances.',
     ),
   };
+
+  /// Merksatz zum Thema (Textbaustein).
+  String topicRule(Topic t) => switch (t) {
+    Topic.hangsPiece => this.t(
+      'Vor jedem Zug fragen: Welche meiner Figuren wird danach ungedeckt oder angreifbar?',
+      'Before every move ask: which of my pieces becomes undefended or attackable afterwards?',
+    ),
+    Topic.allowsMate => this.t(
+      'Vor jedem Zug prüfen: Welche Schachs und Schlagzüge hat mein Gegner danach gegen meinen König?',
+      'Before every move check: which checks and captures does my opponent have against my king afterwards?',
+    ),
+    Topic.missedMate => this.t(
+      'Immer zuerst alle eigenen Schachgebote durchrechnen – manchmal steckt ein Matt dahinter.',
+      'Always calculate all your checks first – sometimes there is a mate behind them.',
+    ),
+    Topic.missedMaterial => this.t(
+      'Nach jedem gegnerischen Zug fragen: Steht jetzt etwas ungedeckt, das ich schlagen kann?',
+      'After every opponent move ask: is something undefended now that I can capture?',
+    ),
+    Topic.missedCheck => this.t(
+      'Schachs, Schlagzüge, Drohungen – in dieser Reihenfolge prüfen, bevor du ziehst.',
+      'Checks, captures, threats – check them in that order before you move.',
+    ),
+    Topic.advantageLost => this.t(
+      'Mit Vorteil nicht hastig werden: Gegenspiel des Gegners prüfen und lieber vereinfachen als Risiken eingehen.',
+      'With an advantage do not rush: check your opponent\'s counterplay and simplify rather than take risks.',
+    ),
+    Topic.whenWorse => this.t(
+      'In schlechter Stellung ruhig bleiben: Schwächen decken, nichts einstellen und auf einen Gegnerfehler warten.',
+      'When worse stay calm: cover weaknesses, do not hang anything and wait for an opponent mistake.',
+    ),
+  };
+
+  /// Kurze Prüffrage vor jedem Zug während des Fokus.
+  String topicCheck(Topic t) => switch (t) {
+    Topic.hangsPiece => this.t('Ist nach meinem Zug jede meiner Figuren gedeckt?', 'After my move, is every piece of mine protected?'),
+    Topic.allowsMate => this.t('Hat mein Gegner danach ein Schach, das mich in Not bringt?', 'Does my opponent have a check afterwards that puts me in trouble?'),
+    Topic.missedMate => this.t('Habe ich alle meine Schachgebote durchgerechnet?', 'Have I calculated all my checks?'),
+    Topic.missedMaterial => this.t('Hat mein Gegner gerade etwas ungedeckt gelassen?', 'Did my opponent just leave something undefended?'),
+    Topic.missedCheck => this.t('Welche Schachs, Schlagzüge und Drohungen habe ich?', 'Which checks, captures and threats do I have?'),
+    Topic.advantageLost => this.t('Was ist das sicherste Weiterspielen mit meinem Vorteil?', 'What is the safest way to continue with my advantage?'),
+    Topic.whenWorse => this.t('Was ist der ruhigste Zug, der nichts verschlechtert?', 'What is the calmest move that makes nothing worse?'),
+  };
 }

@@ -4,7 +4,11 @@ import '../mentor/profile.dart';
 import '../mentor/records.dart';
 import '../mentor/topic_texts.dart';
 import '../mentor/topics.dart';
+import '../mentor/focus.dart';
+import '../mentor/focus_keeper.dart';
 import 'app_scope.dart';
+import 'focus_card.dart';
+import 'puzzle_page.dart';
 import 'game_page.dart';
 import 'profile_view.dart';
 import 'strings.dart';
@@ -19,6 +23,8 @@ class MentorPage extends StatefulWidget {
 
 class _MentorPageState extends State<MentorPage> {
   List<GameRecord>? _records;
+  FocusState _focus = const FocusState();
+  int _duePuzzles = 0;
   bool _started = false;
 
   @override
@@ -26,9 +32,44 @@ class _MentorPageState extends State<MentorPage> {
     super.didChangeDependencies();
     if (_started) return;
     _started = true;
-    AppScope.of(context).store.mentorRecords().then((r) {
-      if (mounted) setState(() => _records = r);
-    });
+    _load();
+  }
+
+  Future<void> _load() async {
+    final store = AppScope.of(context).store;
+    final focus = await FocusKeeper(store).refresh();
+    final records = await store.mentorRecords();
+    final due = focus.active == null ? 0 : await store.dueFocusPuzzles(focus.active!.topic);
+    if (mounted) {
+      setState(() {
+        _records = records;
+        _focus = focus;
+        _duePuzzles = due;
+      });
+    }
+  }
+
+  Profile _profile(List<GameRecord> records) => buildProfile(records);
+
+  Widget _card(BuildContext context, List<GameRecord> records) {
+    final store = AppScope.of(context).store;
+    final profile = _profile(records);
+    return FocusCard(
+      state: _focus,
+      profile: profile,
+      duePuzzles: _duePuzzles,
+      suggestions: _focus.active != null ? const [] : suggestFocus(profile, lastTopic: _focus.lastClosed?.topic),
+      onStart: (s) async {
+        await store.startFocus(startFocusFrom(s, DateTime.now()));
+        await _load();
+      },
+      onCancel: () async {
+        final f = _focus.active;
+        if (f != null) await store.closeFocus(f.id!, FocusStatus.cancelled, DateTime.now());
+        await _load();
+      },
+      onPractice: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const PuzzlePage())).then((_) => _load()),
+    );
   }
 
   @override
@@ -40,7 +81,8 @@ class _MentorPageState extends State<MentorPage> {
       body: records == null
           ? const Center(child: CircularProgressIndicator())
           : ProfileView(
-              profile: buildProfile(records),
+              profile: _profile(records),
+              header: records.isEmpty ? null : _card(context, records),
               onTopic: (t) => Navigator.of(context).push(
                 MaterialPageRoute<void>(builder: (_) => TopicPage(topic: t, records: records)),
               ),

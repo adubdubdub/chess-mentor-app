@@ -9,6 +9,7 @@ import 'data/settings.dart';
 import 'engine/analysis_service.dart';
 import 'engine/net_manager.dart';
 import 'fetch/fetch_service.dart';
+import 'mentor/focus_keeper.dart';
 import 'puzzles/reminders.dart';
 import 'ui/app_scope.dart';
 import 'ui/home_page.dart';
@@ -25,7 +26,10 @@ Future<void> main() async {
   final ai = MentorAi(settings, secrets, store);
   final fetch = FetchService(store, settings, service);
   await reminders.init();
-  service.onAnalysed = reminders.reschedule;
+  service.onAnalysed = () async {
+    await reminders.reschedule();
+    await FocusKeeper(store).refresh(); // Wochenfokus nach jeder neuen Analyse auswerten
+  };
   settings.addListener(reminders.reschedule);
   reminders.onOpen = _openPuzzles;
   service.resume();

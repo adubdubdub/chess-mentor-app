@@ -7,7 +7,9 @@ import 'package:dartchess/dartchess.dart' show Side;
 import 'package:sqflite/sqflite.dart';
 
 import '../analysis/analysis.dart';
+import '../mentor/focus.dart';
 import '../mentor/records.dart';
+import '../mentor/topics.dart';
 import '../puzzles/schedule.dart';
 
 enum GameStatus { waitingColor, queued, analysing, done, error }
@@ -54,15 +56,17 @@ class GameStore {
     final db = await (factory ?? databaseFactory).openDatabase(
       path,
       options: OpenDatabaseOptions(
-        version: 4,
+        version: 5,
         singleInstance: factory == null,
         onCreate: (db, _) async {
           await db.execute(_gamesTable);
           await _createPuzzles(db);
           await _createAttempts(db);
           await _createAiTexts(db);
+          await _createFocus(db);
         },
         onUpgrade: (db, from, _) async {
+          if (from < 5) await _createFocus(db);
           if (from < 4) await _createAiTexts(db);
           if (from < 3) await _createAttempts(db);
           if (from < 2) {
@@ -121,6 +125,21 @@ class GameStore {
       result TEXT NOT NULL,
       wrong INTEGER NOT NULL,
       hint INTEGER NOT NULL
+    )''');
+
+  /// Wochenfokus: ein Thema für sieben Tage mit Ziel und Ausgang (Status siehe FocusStatus).
+  static Future<void> _createFocus(Database db) => db.execute('''
+    CREATE TABLE focus (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      topic TEXT NOT NULL,
+      started_at TEXT NOT NULL,
+      ends_at TEXT NOT NULL,
+      goal_games INTEGER NOT NULL,
+      target INTEGER NOT NULL,
+      baseline_count INTEGER NOT NULL,
+      baseline_games INTEGER NOT NULL,
+      status TEXT NOT NULL,
+      closed_at TEXT
     )''');
 
   /// Zwischenspeicher für KI-Texte (Schlüssel enthält Art, Id, Sprache und Prompt-Version).
@@ -255,11 +274,19 @@ class GameStore {
   // ── Puzzles ──────────────────────────────────────────────────────────────────
 
   /// Fällige Puzzles (älteste zuerst) mit den Spielernamen ihrer Partie.
-  Future<List<StoredPuzzle>> duePuzzles({int limit = 50}) async => (await _db.rawQuery(
-    'SELECT p.*, g.white, g.black FROM puzzles p JOIN games g ON g.id = p.game_id '
-    'WHERE p.due IS NOT NULL AND p.due <= ? ORDER BY p.due, p.id LIMIT ?',
-    [isoDay(DateTime.now()), limit],
-  )).map(StoredPuzzle.new).toList();
+  /// Mit [focus] kommen Puzzles zu diesem Thema zuerst (innerhalb der Gruppen bleibt die Reihenfolge nach Fälligkeit);
+  /// die Tagesgrenze und die Stufen bleiben unverändert.
+  Future<List<StoredPuzzle>> duePuzzles({int limit = 50, Topic? focus}) async {
+    final rows = await _db.rawQuery(
+      'SELECT p.*, g.white, g.black FROM puzzles p JOIN games g ON g.id = p.game_id '
+      'WHERE p.due IS NOT NULL AND p.due <= ? ORDER BY p.due, p.id LIMIT ?',
+      [isoDay(DateTime.now()), focus == null ? limit : 500],
+    );
+    final puzzles = rows.map(StoredPuzzle.new).toList();
+    if (focus == null) return puzzles;
+    bool hit(StoredPuzzle p) => topicsOf(p.moment).contains(focus);
+    return [...puzzles.where(hit), ...puzzles.where((p) => !hit(p))].take(limit).toList();
+  }
 
   /// Das nächste noch nicht fällige Puzzle (zum Vorziehen).
   Future<StoredPuzzle?> nextPuzzle() async => (await _db.rawQuery(
@@ -348,6 +375,86 @@ class GameStore {
     records.sort((x, y) => y.playedAt.compareTo(x.playedAt));
     return records.take(limit).toList();
   }
+
+  // ── Wochenfokus ─────────────────────────────────────────────────────────────
+
+  static FocusEntry _focusOf(Map<String, Object?> r) => FocusEntry(
+    id: r['id']! as int,
+    topic: Topic.values.byName(r['topic']! as String),
+    startedAt: DateTime.parse(r['started_at']! as String),
+    endsAt: DateTime.parse(r['ends_at']! as String),
+    goalGames: r['goal_games']! as int,
+    target: r['target']! as int,
+    baselineCount: r['baseline_count']! as int,
+    baselineGames: r['baseline_games']! as int,
+    status: FocusStatus.values.byName(r['status']! as String),
+    closedAt: r['closed_at'] == null ? null : DateTime.parse(r['closed_at']! as String),
+  );
+
+  /// Der laufende Fokus (Status aktiv), sonst null. Die Auswertung (erreicht, verfehlt, abgelaufen) macht [FocusKeeper].
+  Future<FocusEntry?> activeFocus() async {
+    final rows = await _db.query('focus', where: 'status = ?', whereArgs: [FocusStatus.active.name], orderBy: 'id DESC', limit: 1);
+    return rows.isEmpty ? null : _focusOf(rows.first);
+  }
+
+  /// Der zuletzt beendete Fokus (jeder Status außer aktiv), sonst null.
+  Future<FocusEntry?> lastClosedFocus() async {
+    final rows = await _db.query('focus', where: 'status != ?', whereArgs: [FocusStatus.active.name], orderBy: 'id DESC', limit: 1);
+    return rows.isEmpty ? null : _focusOf(rows.first);
+  }
+
+  Future<List<FocusEntry>> focusHistory() async => [for (final r in await _db.query('focus', orderBy: 'id')) _focusOf(r)];
+
+  /// Neuen Fokus starten; ein noch laufender wird als abgebrochen beendet. Gibt die id zurück.
+  Future<int> startFocus(FocusEntry f) => _db.transaction((tx) async {
+    await tx.update(
+      'focus',
+      {'status': FocusStatus.cancelled.name, 'closed_at': f.startedAt.toIso8601String()},
+      where: 'status = ?',
+      whereArgs: [FocusStatus.active.name],
+    );
+    return tx.insert('focus', {
+      'topic': f.topic.name,
+      'started_at': f.startedAt.toIso8601String(),
+      'ends_at': f.endsAt.toIso8601String(),
+      'goal_games': f.goalGames,
+      'target': f.target,
+      'baseline_count': f.baselineCount,
+      'baseline_games': f.baselineGames,
+      'status': FocusStatus.active.name,
+    });
+  });
+
+  /// Fokus aus einem Import übernehmen, falls es (Thema, Start) noch nicht gibt.
+  Future<bool> importFocus(FocusEntry f) async {
+    final exists = await _db.query(
+      'focus',
+      columns: ['id'],
+      where: 'topic = ? AND started_at = ?',
+      whereArgs: [f.topic.name, f.startedAt.toIso8601String()],
+    );
+    if (exists.isNotEmpty) return false;
+    await _db.insert('focus', {
+      'topic': f.topic.name,
+      'started_at': f.startedAt.toIso8601String(),
+      'ends_at': f.endsAt.toIso8601String(),
+      'goal_games': f.goalGames,
+      'target': f.target,
+      'baseline_count': f.baselineCount,
+      'baseline_games': f.baselineGames,
+      // Ein laufender Fokus aus dem Export bleibt nur aktiv, wenn hier keiner läuft
+      'status': f.status == FocusStatus.active && await activeFocus() != null ? FocusStatus.cancelled.name : f.status.name,
+      'closed_at': f.closedAt?.toIso8601String(),
+    });
+    return true;
+  }
+
+  Future<void> closeFocus(int id, FocusStatus status, DateTime at) =>
+      _db.update('focus', {'status': status.name, 'closed_at': at.toIso8601String()}, where: 'id = ?', whereArgs: [id]);
+
+  /// Fällige Puzzles zum Thema [topic] (für die Anzeige im Wochenfokus).
+  Future<int> dueFocusPuzzles(Topic topic) async =>
+      [for (final p in await duePuzzles(limit: 500)) if (topicsOf(p.moment).contains(topic)) p].length;
 
   Future<int> doneToday() async {
     final r = await _db.query('meta', where: 'key = ?', whereArgs: ['puzzles:${isoDay(DateTime.now())}']);

@@ -13,6 +13,8 @@ import 'package:dartchess/dartchess.dart' show Side;
 
 import '../ai/prompts.dart';
 import '../analysis/analysis.dart';
+import '../mentor/focus.dart';
+import '../mentor/topics.dart';
 import 'game_store.dart';
 import 'settings.dart';
 
@@ -88,6 +90,20 @@ class Backup {
           if (settings!.lichessSince != null) 'lichessSince': settings!.lichessSince,
           if (settings!.chesscomSince != null) 'chesscomSince': settings!.chesscomSince,
         },
+      'focus': [
+        for (final f in await store.focusHistory())
+          {
+            'topic': f.topic.name,
+            'startedAt': f.startedAt.toIso8601String(),
+            'endsAt': f.endsAt.toIso8601String(),
+            'goalGames': f.goalGames,
+            'target': f.target,
+            'baselineCount': f.baselineCount,
+            'baselineGames': f.baselineGames,
+            'status': f.status.name,
+            'closedAt': f.closedAt?.toIso8601String(),
+          },
+      ],
       'games': games,
     });
   }
@@ -116,6 +132,26 @@ class Backup {
       if (st.chesscomUser.isEmpty && acc['chesscom'] is String) {
         st.chesscomUser = acc['chesscom'] as String;
         if (acc['chesscomSince'] is int) st.chesscomSince = acc['chesscomSince'] as int;
+      }
+    }
+    for (final raw in (data['focus'] as List? ?? const [])) {
+      try {
+        final f = raw as Map<String, dynamic>;
+        await store.importFocus(
+          FocusEntry(
+            topic: Topic.values.byName(f['topic'] as String),
+            startedAt: DateTime.parse(f['startedAt'] as String),
+            endsAt: DateTime.parse(f['endsAt'] as String),
+            goalGames: f['goalGames'] as int,
+            target: f['target'] as int,
+            baselineCount: f['baselineCount'] as int,
+            baselineGames: f['baselineGames'] as int,
+            status: FocusStatus.values.byName(f['status'] as String),
+            closedAt: f['closedAt'] == null ? null : DateTime.parse(f['closedAt'] as String),
+          ),
+        );
+      } catch (_) {
+        // unlesbarer Fokus-Eintrag: überspringen, Partien trotzdem übernehmen
       }
     }
     var added = 0, skipped = 0, invalid = 0, puzzles = 0;
