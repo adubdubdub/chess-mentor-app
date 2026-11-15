@@ -379,7 +379,10 @@ adb install -r build/app/outputs/flutter-apk/app-release.apk
 - [x] **Schritt 4:** Export/Import und Übernahme der Bot-Daten (am Handy geprüft, Bot abgebaut)
 - [x] **Schritt 5:** Abruf per Benutzername (Lichess, Chess.com), mehrere Partien je PGN, Analyse im Hintergrund (am Handy geprüft)
 - [x] **Schritt 6:** Mentor-Kern: Schwächenprofil und Wochenfokus mit Vorschlag und Wahl, automatischer Auswertung, Rückblick, KI-Text und Benachrichtigungen (siehe Abschnitt Mentor; offen: Test über mehrere Tage mit neuen Partien)
-- [ ] **Elo-Anpassung (geplant, vor Schritt 7):** Erklärungen, Tipps, Wochenfokus und KI-Texte an die geschätzte Spielstärke anpassen; Plan in der Projektnotiz
+- [ ] **Elo-Anpassung (geplant, vor Schritt 7):** Erklärungen, Tipps, Wochenfokus und KI-Texte an die geschätzte Spielstärke anpassen.
+  - Spielstärke automatisch (Online-Wertung von Lichess und Chess.com, vorläufige Wertungen zählen wenig, plus eigene Partien) oder manuell, immer mit Anzeige von Quelle und Sicherheit; vier Stufen (< 1000, 1000–1400, 1400–1800, > 1800) mit Hysterese gegen Textwechsel.
+  - E1 Schätzung und Einstellungen · E2 Stufenmodell und KI-Prompts · E3 Texte je Stufe (Info-Blätter, Merksatz, Prüffrage, Lernpunkt) · E4 Fokus-Gewichte und Ziele je Stufe.
+  - Später nach der Testzeit: Puzzle-Schwellen nach Stufe, Richtwerte „typisch für dein Niveau“, Brett-Themen.
 - [ ] **Schritt 7:** Erste Weitergabe an Familie und Freunde (GitHub Releases, Obtainium), erst nach der Testzeit
 - [ ] **Schritt 8:** F-Droid: Übersetzungsdateien, Barrierefreiheit, Datenschutzhinweis (mit Angabe zur KI-Nutzung und den gesendeten Daten)
 
