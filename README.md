@@ -9,6 +9,18 @@ Telegram-Bot, den die App ab Ende 2026 ersetzt.
 > Dazu kommen die sokratische Besprechung am Brett und Puzzles aus eigenen Fehlern mit Wiederholung und Erinnerung.
 > Texte kommen auf Wunsch von einer KI (eigener Heimserver oder eigener Schlüssel), immer gegen die Engine-Fakten geprüft.
 
+## Auf einen Blick
+| | |
+|---|---|
+| **Zweck** | Schach-Analyse und Lerntrainer als Android-App |
+| **App-ID** | `io.github.adubdubdub.schachmentor` |
+| **Engine** | Stockfish 17.1 auf dem Handy |
+| **Build** | nur mit `tools/build-apk.sh`, CI bei jedem Push |
+| **Nachfolger von** | Telegram-Bot `chess-mentor` |
+
+> [!CAUTION]
+> Der Release-Signierschlüssel (`/root/keys/schachmentor`) wird nie ausgegeben oder committet. Geht er verloren, gibt es keine Updates mehr.
+
 ## 🧭 Zielbild
 
 ```mermaid
