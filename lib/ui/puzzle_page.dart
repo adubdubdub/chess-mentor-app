@@ -8,6 +8,7 @@ import '../coach/coach_texts.dart';
 import '../data/game_store.dart';
 import '../puzzles/follow_up.dart';
 import '../puzzles/schedule.dart';
+import 'ai_badge.dart';
 import 'app_scope.dart';
 import 'evaluation_table.dart';
 import 'strings.dart';
@@ -266,7 +267,7 @@ class _PuzzlePageState extends State<PuzzlePage> {
           Text(tr.san(m.replyLine)),
         ],
         heading(tr.t('Warum', 'Why')),
-        Text(_aiText ?? coach.puzzleWhy(m)),
+        aiAwareText(context, _aiText ?? coach.puzzleWhy(m), ai: _aiText != null),
         if (_aiLoading)
           Padding(
             padding: const EdgeInsets.only(top: 4),

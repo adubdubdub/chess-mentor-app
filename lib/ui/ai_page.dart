@@ -52,8 +52,10 @@ class _AiPageState extends State<AiPage> {
     if (mounted) setState(() {});
   }
 
-  Future<void> _save() async {
+  Future<void> _save({bool notify = false}) async {
     final scope = AppScope.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    final saved = Tr.of(context).t('Gespeichert.', 'Saved.');
     scope.settings.aiMode = _mode;
     if (_mode == AiMode.templates) return;
     scope.settings.setAiBaseUrl(_mode, _url.text);
@@ -61,6 +63,7 @@ class _AiPageState extends State<AiPage> {
     await scope.secrets.write(_mode.name, 'apiKey', _key.text.trim());
     await scope.secrets.write(_mode.name, 'cfId', _cfId.text.trim());
     await scope.secrets.write(_mode.name, 'cfSecret', _cfSecret.text.trim());
+    if (notify) messenger.showSnackBar(SnackBar(content: Text(saved)));
   }
 
   Future<void> _runTest() async {
@@ -114,6 +117,16 @@ class _AiPageState extends State<AiPage> {
               'Analysis always runs on your phone. AI only words the explanations; every move it mentions is checked '
                   'against the Stockfish facts, otherwise the built-in texts are used.',
             ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            tr.t(
+              'Texte, die eine KI geschrieben hat, sind mit „✨ KI“ gekennzeichnet. Gesendet werden nur Stellungen, Züge und '
+                  'Bewertungen aus der Analyse, keine Namen und keine Kontodaten.',
+              'Texts written by an AI are marked “✨ AI”. Only positions, moves and evaluations from the analysis are sent, '
+                  'no names and no account data.',
+            ),
+            style: theme.textTheme.bodySmall,
           ),
           const SizedBox(height: 12),
           RadioGroup<AiMode>(
@@ -188,7 +201,7 @@ class _AiPageState extends State<AiPage> {
               spacing: 8,
               crossAxisAlignment: WrapCrossAlignment.center,
               children: [
-                FilledButton(onPressed: _save, child: Text(tr.t('Speichern', 'Save'))),
+                FilledButton(onPressed: () => _save(notify: true), child: Text(tr.t('Speichern', 'Save'))),
                 OutlinedButton(
                   onPressed: _testing ? null : _runTest,
                   child: Text(tr.t('Verbindung testen', 'Test connection')),

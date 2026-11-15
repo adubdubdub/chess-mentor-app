@@ -116,7 +116,7 @@ Prüfung je Feld, jeweils mit Rückfall auf den Textbaustein nur für dieses Fel
 - Frage und Tipp dürfen den besten Zug nicht nennen, auch nicht sein Zielfeld.
 - Leere oder nicht lesbare Antworten werden verworfen.
 
-Ein Text wird einmal erzeugt und gespeichert (Schlüssel enthält Art, Id, Sprache und Prompt-Version). Zugangsdaten liegen im
+Texte, die eine KI geschrieben hat, tragen das Zeichen „✨ KI“ (Antippen erklärt, was geprüft wird). Gesendet werden nur Stellungen, Züge und Bewertungen aus der Analyse, keine Spielernamen und keine Kontodaten. Ein Text wird einmal erzeugt und gespeichert (Schlüssel enthält Art, Id, Sprache und Prompt-Version). Zugangsdaten liegen im
 Android-Keystore (`flutter_secure_storage`), nicht in den Einstellungen und nicht im Backup (`allowBackup` aus).
 **Heimserver ist nur für das eigene Handy gedacht**, weil das Abo persönlich ist; andere Nutzer verwenden Textbausteine
 oder einen eigenen Schlüssel.

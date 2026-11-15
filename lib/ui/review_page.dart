@@ -7,6 +7,7 @@ import '../analysis/chess_utils.dart';
 import '../analysis/judge.dart';
 import '../coach/coach_texts.dart';
 import '../ai/review_texts.dart';
+import 'ai_badge.dart';
 import 'app_scope.dart';
 import 'evaluation_table.dart';
 import 'line_viewer.dart';
@@ -206,8 +207,16 @@ class _ReviewPageState extends State<ReviewPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               if (!_revealed) ...[
-                Text('❓ ${_ai?.moments[m.ply]?.question ?? coach.question(m)}', style: theme.textTheme.titleMedium),
-                if (_hint) ...[const SizedBox(height: 8), Text('💡 ${_ai?.moments[m.ply]?.tip ?? coach.tip(m)}')],
+                aiAwareText(
+                  context,
+                  '❓ ${_ai?.moments[m.ply]?.question ?? coach.question(m)}',
+                  ai: _ai?.moments[m.ply]?.question != null,
+                  style: theme.textTheme.titleMedium,
+                ),
+                if (_hint) ...[
+                  const SizedBox(height: 8),
+                  aiAwareText(context, '💡 ${_ai?.moments[m.ply]?.tip ?? coach.tip(m)}', ai: _ai?.moments[m.ply]?.tip != null),
+                ],
                 if (_feedback != null) ...[const SizedBox(height: 8), MoveText(_feedback!)],
                 const SizedBox(height: 8),
                 if (_judging)
@@ -260,7 +269,7 @@ class _ReviewPageState extends State<ReviewPage> {
                   ],
                 ),
                 const SizedBox(height: 12),
-                ...explanationSections(coach, m, attempt: attempt, aiText: _ai?.moments[m.ply]?.explanation),
+                ...explanationSections(context, coach, m, attempt: attempt, aiText: _ai?.moments[m.ply]?.explanation),
                 const SizedBox(height: 4),
                 FilledButton.icon(
                   onPressed: _next,
@@ -283,14 +292,14 @@ class _ReviewPageState extends State<ReviewPage> {
     return ListView(
       padding: const EdgeInsets.all(24),
       children: [
-        Text(_ai?.summary ?? coach.summary(a), style: theme.textTheme.bodyLarge),
+        aiAwareText(context, _ai?.summary ?? coach.summary(a), ai: _ai?.summary != null, style: theme.textTheme.bodyLarge),
         const SizedBox(height: 24),
         Text(
           '🎯 ${tr.t('Lernpunkt für die nächsten Partien', 'Takeaway for your next games')}',
           style: theme.textTheme.titleMedium,
         ),
         const SizedBox(height: 8),
-        Text(_ai?.learning ?? coach.learningPoint(a), style: theme.textTheme.titleLarge),
+        aiAwareText(context, _ai?.learning ?? coach.learningPoint(a), ai: _ai?.learning != null, style: theme.textTheme.titleLarge),
         if (n > 0) ...[
           const SizedBox(height: 24),
           Text(
@@ -318,6 +327,7 @@ List<LineOption> lineOptions(Tr tr, Moment m, {(Verdict, double, List<String>)? 
 /// Erklärung: Gewinnchance-Tabelle, dann farbige Abschnitte (warum der Partiezug schwach ist, warum der beste Zug stark
 /// ist, dein Versuch). Die Prozentwerte stehen nur in der Tabelle.
 List<Widget> explanationSections(
+  BuildContext context,
   CoachTexts coach,
   Moment m, {
   (Verdict, double, List<String>)? attempt,
@@ -331,7 +341,7 @@ List<Widget> explanationSections(
   return [
     EvaluationTable(moment: m, tr: tr, ownSan: first == null ? null : numbered(pos, [first]), ownWin: attempt?.$2),
     const SizedBox(height: 8),
-    if (aiText != null) ...[Text('💬 $aiText'), const SizedBox(height: 8)],
+    if (aiText != null) ...[aiAwareText(context, '💬 $aiText', ai: true), const SizedBox(height: 8)],
     ColoredSection(
       color: playedColor,
       title: tr.t('Warum $p nicht gut war', 'Why $p was not good'),

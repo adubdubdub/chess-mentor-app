@@ -73,8 +73,6 @@ $facts''';
 /// Fakten zu einer ganzen Partie für die Besprechung (wie `_facts` in coach.py).
 Map<String, Object?> reviewFacts(GameAnalysis a, {required bool de}) => {
   'color': a.color.name,
-  'white': a.white,
-  'black': a.black,
   'result': a.result,
   'opening': a.opening,
   'moves': a.moves,

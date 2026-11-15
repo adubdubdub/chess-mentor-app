@@ -4,6 +4,7 @@ import '../mentor/focus.dart';
 import '../mentor/focus_keeper.dart';
 import '../mentor/profile.dart';
 import '../mentor/topic_texts.dart';
+import 'ai_badge.dart';
 import 'strings.dart';
 import 'topic_info_sheet.dart';
 
@@ -65,11 +66,11 @@ class FocusCard extends StatelessWidget {
           );
   }
 
-  Widget _personal(Tr tr, ThemeData theme) {
+  Widget _personal(BuildContext context, Tr tr, ThemeData theme) {
     if (aiText != null) {
       return Padding(
         padding: const EdgeInsets.only(top: 10),
-        child: Text('💬 $aiText'),
+        child: aiAwareText(context, '💬 $aiText', ai: true),
       );
     }
     if (aiLoading) {
@@ -102,7 +103,7 @@ class FocusCard extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         Text(tr.topicRule(f.topic)),
-        _personal(tr, theme),
+        _personal(context, tr, theme),
         const SizedBox(height: 8),
         Text('❓ ${tr.t('Vor jedem Zug', 'Before every move')}: ${tr.topicCheck(f.topic)}', style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
         const SizedBox(height: 12),
@@ -198,7 +199,7 @@ class FocusCard extends StatelessWidget {
           ],
         ),
         Text(tr.topicHint(first.topic)),
-        _personal(tr, theme),
+        _personal(context, tr, theme),
         const SizedBox(height: 6),
         Text(
           tr.t(

@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:chess_mentor/ai/prompts.dart';
 import 'package:chess_mentor/ai/review_texts.dart';
 import 'package:chess_mentor/analysis/analysis.dart';
 import 'package:chess_mentor/analysis/chess_utils.dart';
@@ -83,4 +84,12 @@ void main() {
     final t = parseReview(_json({}), _analysis(), de: true)!;
     expect(ReviewTexts.fromJson(jsonDecode(jsonEncode(t.toJson())) as Map<String, dynamic>).moments[12]!.tip, t.moments[12]!.tip);
   });
+
+  test('Prompt enthält keine Spielernamen (Datenschutz bei fremden Anbietern)', () {
+    final facts = reviewFacts(_analysis(), de: true);
+    expect(facts.containsKey('white'), isFalse);
+    expect(facts.containsKey('black'), isFalse);
+    expect(reviewPrompt(_analysis(), de: true), isNot(contains('"white":')));
+  });
 }
+

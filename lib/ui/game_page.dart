@@ -615,7 +615,7 @@ class MomentPage extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: [...explanationSections(CoachTexts(tr), m)],
+              children: [...explanationSections(context, CoachTexts(tr), m)],
             ),
           ),
         ],
