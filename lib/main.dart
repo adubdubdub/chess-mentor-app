@@ -10,6 +10,7 @@ import 'engine/analysis_service.dart';
 import 'engine/net_manager.dart';
 import 'fetch/fetch_service.dart';
 import 'mentor/focus_keeper.dart';
+import 'mentor/strength_service.dart';
 import 'puzzles/reminders.dart';
 import 'ui/app_scope.dart';
 import 'ui/home_page.dart';
@@ -26,9 +27,11 @@ Future<void> main() async {
   final secrets = SecretStore();
   final ai = MentorAi(settings, secrets, store);
   final fetch = FetchService(store, settings, service);
+  final strength = StrengthService(store, settings);
   await reminders.init();
   service.onAnalysed = () async {
     await reminders.reschedule();
+    await strength.refresh(); // Spielstärke aus den Partien nachziehen
     await FocusKeeper(store, onVerdict: reminders.showFocusResult).refresh(); // Wochenfokus nach jeder Analyse auswerten
     await reminders.rescheduleFocus();
   };
@@ -43,11 +46,13 @@ Future<void> main() async {
       reminders: reminders,
       ai: ai,
       fetch: fetch,
+      strength: strength,
       secrets: secrets,
       child: const ChessMentorApp(),
     ),
   );
-  fetch.autoFetch(); // ohne await: Fehler (kein Netz) dürfen den Start nicht verzögern
+  // ohne await: Fehler (kein Netz) dürfen den Start nicht verzögern; danach Wertungen der Konten abrufen
+  fetch.autoFetch().whenComplete(() => strength.refresh(online: true));
   await reminders.requestPermission();
   await reminders.reschedule();
   final launch = await reminders.launchedFromReminder();

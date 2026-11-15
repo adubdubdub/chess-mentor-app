@@ -5,10 +5,13 @@ import '../analysis/analysis.dart';
 import '../analysis/chess_utils.dart';
 import '../data/settings.dart';
 import '../engine/mobile_engine.dart';
+import '../mentor/level_texts.dart';
+import '../mentor/strength.dart';
 import '../engine/net_manager.dart';
 import 'accounts_page.dart';
 import 'ai_page.dart';
 import 'data_page.dart';
+import 'strength_page.dart';
 import 'app_scope.dart';
 import 'strings.dart';
 
@@ -140,6 +143,14 @@ class _EnginePageState extends State<EnginePage> {
               ),
               trailing: const Icon(Icons.chevron_right),
               onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const AccountsPage())),
+            ),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.trending_up),
+              title: Text(tr.t('Spielstärke', 'Strength')),
+              subtitle: Text('ca. ${roundElo(settings.elo)} Elo · ${tr.levelName(settings.level)}'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const StrengthPage())),
             ),
             ListTile(
               contentPadding: EdgeInsets.zero,

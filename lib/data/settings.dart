@@ -1,7 +1,10 @@
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../engine/mobile_engine.dart';
+import '../mentor/strength.dart';
 
 /// Woher die Texte kommen: Textbausteine (offline), Heimserver (KI-Gateway) oder eigener Schlüssel.
 enum AiMode { templates, home, ownKey }
@@ -51,6 +54,44 @@ class Settings extends ChangeNotifier {
   /// Benachrichtigungen zum Wochenfokus (Wochenanfang, Ergebnis).
   bool get focusReminders => _prefs.getBool('focusReminders') ?? true;
   set focusReminders(bool v) => _set(() => _prefs.setBool('focusReminders', v));
+
+  // ── Spielstärke (Elo-Anpassung) ──────────────────────────────────────────────
+
+  /// Automatisch geschätzt oder manuell eingetragen.
+  bool get strengthManual => _prefs.getBool('strengthManual') ?? false;
+  set strengthManual(bool v) => _set(() => _prefs.setBool('strengthManual', v));
+
+  /// Manuell eingetragene Spielstärke (nur wirksam bei [strengthManual]).
+  int get strengthManualElo => _prefs.getInt('strengthManualElo') ?? defaultElo;
+  set strengthManualElo(int v) => _set(() => _prefs.setInt('strengthManualElo', v.clamp(400, 2800)));
+
+  /// Letzte Schätzung samt Online-Zwischenstand und Stufe mit Hysterese-Zustand.
+  Strength? get strength {
+    final t = _prefs.getString('strength');
+    if (t == null) return null;
+    try {
+      return Strength.fromJson(jsonDecode(t) as Map<String, dynamic>);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  set strength(Strength? v) =>
+      _set(() => v == null ? _prefs.remove('strength') : _prefs.setString('strength', jsonEncode(v.toJson())));
+
+  LevelState? get levelState => LevelState.tryParse(_prefs.getString('levelState'));
+  set levelState(LevelState? v) =>
+      _set(() => v == null ? _prefs.remove('levelState') : _prefs.setString('levelState', jsonEncode(v.toJson())));
+
+  /// Aktuelle Stufe; ohne Schätzung die zum Ausgangswert.
+  Level get level => levelState?.level ?? levelFor(strength?.elo ?? defaultElo);
+
+  /// Aktuelle Spielstärke: manuell, sonst Schätzung, sonst Ausgangswert.
+  int get elo => strengthManual ? strengthManualElo : (strength?.elo ?? defaultElo);
+
+  /// Die Zahl (auf 50 gerundet) darf an die KI gehen; sonst nur die Stufe.
+  bool get strengthToAi => _prefs.getBool('strengthToAi') ?? true;
+  set strengthToAi(bool v) => _set(() => _prefs.setBool('strengthToAi', v));
 
   bool get reminders => _prefs.getBool('reminders') ?? true;
   set reminders(bool v) => _set(() => _prefs.setBool('reminders', v));
