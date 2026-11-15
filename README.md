@@ -2,12 +2,16 @@
 
 Stockfish rechnet, du lernst: Android-App, die eigene Schachpartien auf dem Handy analysiert, Fehler im Dialog bespricht
 und als Puzzles mit Wiederholung einübt. Ohne eigenen Server und ohne Pflicht-Schlüssel. Entstanden aus einem privaten
-Telegram-Bot, den die App ab Ende 2026 ersetzt.
+Telegram-Bot, den die App seit November 2026 ersetzt.
 
-> **Stand: Schritt 3 von 8 (15.11.2026), nächster Schritt 4: Export/Import.** Partien kommen per Teilen, Einfügen oder Datei in die App. Stockfish analysiert sie auf dem Handy
-> wie der Telegram-Bot: Genauigkeit, Fehler-Einstufung, Verlauf und Schlüsselmomente mit Pfeilen und Varianten.
-> Dazu kommen die sokratische Besprechung am Brett und Puzzles aus eigenen Fehlern mit Wiederholung und Erinnerung.
-> Texte kommen auf Wunsch von einer KI (eigener Heimserver oder eigener Schlüssel), immer gegen die Engine-Fakten geprüft.
+> **Stand (15.11.2026): Schritte 1–6 umgesetzt, Testzeit am Handy läuft.** Geplant sind als Nächstes die Anpassung der
+> Erklärungen an die Spielstärke (Plan siehe Roadmap), danach Schritt 7 (Weitergabe) erst nach der Testzeit.
+>
+> Partien kommen per Teilen, Einfügen, Datei oder Benutzername von Lichess und Chess.com in die App. Stockfish analysiert sie
+> auf dem Handy: Genauigkeit, Fehler-Einstufung, Verlauf und Schlüsselmomente mit Pfeilen und Varianten. Dazu kommen die
+> sokratische Besprechung am Brett, Puzzles aus eigenen Fehlern mit Wiederholung und der **Mentor**: Schwächenprofil und
+> Wochenfokus mit Ziel, Auswertung und Rückblick. Texte kommen auf Wunsch von einer KI (eigener Heimserver oder eigener
+> Schlüssel), immer gegen die Engine-Fakten geprüft und mit „✨ KI“ gekennzeichnet.
 
 ## Auf einen Blick
 | | |
@@ -16,22 +20,24 @@ Telegram-Bot, den die App ab Ende 2026 ersetzt.
 | **App-ID** | `io.github.adubdubdub.schachmentor` |
 | **Engine** | Stockfish 17.1 auf dem Handy |
 | **Build** | nur mit `tools/build-apk.sh`, CI bei jedem Push |
+| **Daten** | SQLite auf dem Handy (Schema 5), Export als JSON, kein Server nötig |
+| **Tests** | über 100 Unit- und Widget-Tests, dazu Engine-Vergleich mit dem Bot (nur auf dem Heimserver) |
 | **Nachfolger von** | Telegram-Bot `chess-mentor` |
 
 > [!CAUTION]
 > Der Release-Signierschlüssel (`/root/keys/schachmentor`) wird nie ausgegeben oder committet. Geht er verloren, gibt es keine Updates mehr.
 
-## 🧭 Zielbild
+## 🧭 Überblick
 
 ```mermaid
 flowchart LR
-    A["📱 Lichess-App<br/>PGN teilen"] --> M
-    L["☁️ Lichess-API<br/>Online-Partien"] -.-> M
-    M(["♟️ Schach-Mentor<br/>Stockfish auf dem Handy"]) --> R["💬 Besprechung"]
-    M --> P["🧩 Puzzles"]
-    M -.-> C["🤖 KI-Texte optional<br/>eigener Schlüssel"]
-    M -.-> H["🔒 Claude Code im Heimnetz<br/>nur eigenes Handy"]
-    M -.-> S["📚 Lichess-Studie<br/>optional"]
+    A["📱 PGN teilen, Datei,<br/>Text einfügen"] --> M
+    L["☁️ Lichess und Chess.com<br/>per Benutzername"] --> M
+    M(["♟️ Schach-Mentor<br/>Stockfish auf dem Handy"]) --> R["💬 Besprechung am Brett"]
+    M --> P["🧩 Puzzles mit Wiederholung"]
+    M --> T["🎯 Mentor:<br/>Profil, Wochenfokus, Rückblick"]
+    M -.-> C["🤖 KI-Texte optional<br/>Heimserver oder eigener Schlüssel"]
+    M --> E["💾 Export und Import"]
 ```
 
 Texte entstehen in drei Stufen, nur die erste ist Pflicht:
@@ -53,18 +59,19 @@ chess-mentor-app/
 │   ├── analysis/        Port von analysis.py: Gewinnchance, Einstufung, Momente, Motive (reines Dart, testbar)
 │   ├── coach/           Texte des Mentors ohne Sprachmodell: Fragen, Tipps, Erklärungen, Lernpunkt
 │   ├── ai/              KI-Texte: Anbieter, Prompts, Prüfung gegen Engine-Fakten, Zwischenspeicher, Schlüssel (Keystore)
+│   ├── mentor/          Schwächen-Themen, Profil, Wochenfokus, Auswertung, Rückblick, Texte und Benachrichtigungen (reines Dart, testbar)
 │   ├── puzzles/         Wiederholungsplan (Stufen, Wertung), Folgezug zweizügiger Puzzles, Erinnerungen
 │   ├── engine/          Stockfish auf dem Handy (kleines/großes Netz), Netz-Download, Analyse-Warteschlange, Vordergrunddienst
 │   ├── fetch/           Online-Partien von Lichess und Chess.com per Benutzername
 │   ├── data/            Partien, Puzzles, Versuche und KI-Texte in SQLite, Einstellungen, Export/Import (backup.dart)
-│   ├── ui/              Partienliste, Import, Partie- und Momentansicht, Gewinnchance-Tabelle, Engine-Seite, Texte DE/EN
+│   ├── ui/              Partienliste, Import, Partie- und Momentansicht, Gewinnchance-Tabelle, Mentor-Seiten, Einstellungen, Texte DE/EN
 │   └── main.dart
-├── test/                Unit-Tests und Vergleich mit dem Bot (fixtures: gemeinfreie Partien + Bot-Referenz)
+├── test/                Unit- und Widget-Tests; Engine-Vergleich mit dem Bot (fixtures: gemeinfreie Partien + Bot-Referenz)
 ├── .github/workflows/   CI: Analyse, Tests, Prüf-Build (Flutter-Version festgelegt)
 ├── android/             Android-Projekt, Speichergrenzen in gradle.properties, Signierung (Schlüssel außerhalb des Repos)
 ├── tools/
 │   ├── build-apk.sh     begrenzter APK-Build für den Heimserver
-│   ├── bot_export.py    Daten des Telegram-Bots in eine Exportdatei umwandeln (einmalig)
+│   └── bot_export.py    Daten des Telegram-Bots in eine Exportdatei umwandeln (einmalig, Bot ist abgebaut)
 └── LICENSE              GPL-3.0
 ```
 
@@ -120,6 +127,112 @@ Texte, die eine KI geschrieben hat, tragen das Zeichen „✨ KI“ (Antippen er
 Android-Keystore (`flutter_secure_storage`), nicht in den Einstellungen und nicht im Backup (`allowBackup` aus).
 **Heimserver ist nur für das eigene Handy gedacht**, weil das Abo persönlich ist; andere Nutzer verwenden Textbausteine
 oder einen eigenen Schlüssel.
+
+## 🎯 Mentor: Schwächenprofil und Wochenfokus
+
+Der Mentor wertet über die letzten **20 analysierten Partien** aus, wo die Fehlzüge liegen, schlägt ein Thema für die
+Woche vor und misst, ob es besser wird. Alles wird aus den vorhandenen Analysedaten berechnet (reines Dart in
+`lib/mentor/`), es gibt keine zusätzliche Engine-Rechnung. Einstieg ist das Symbol „Mentor“ in der Partieliste.
+
+```mermaid
+flowchart LR
+    G["📊 Analysierte Partien<br/>+ Puzzle-Stand"] --> T["🏷️ Themen je Fehlzug"]
+    T --> P["📈 Profil<br/>Häufigkeit · Schwere · Trend"]
+    P --> V["💡 Vorschlag mit Wahl<br/>(3 Themen)"]
+    V --> F["🎯 Wochenfokus<br/>7 Tage, Ziel"]
+    F --> A["⚙️ Auswertung nach<br/>jeder Analyse"]
+    A --> R["📝 Rückblick"]
+    F -.-> Z["🧩 Fokus-Puzzles zuerst"]
+    F -.-> N["🔔 Montag 9:00<br/>und Ergebnis"]
+    R --> V
+```
+
+**Themen** (ein Fehlzug kann mehrere haben; alles aus vorhandenen Feldern):
+
+| Thema | Quelle |
+|---|---|
+| Figur eingestellt | Motiv `hangs_material` |
+| Matt zugelassen / Matt verpasst | `allows_mate`, `mate_missed` |
+| Material verpasst | `wins_material`, `best_is_capture` |
+| Schachgebot übersehen | `best_is_check` (ohne verpasstes Matt) |
+| Vorteil verspielt | Gewinnchance vorher ≥ 65 und Verlust ≥ 15 |
+| Fehler in schlechter Stellung | Gewinnchance vorher ≤ 35 |
+
+**Profil** (`lib/mentor/profile.dart`): Fehlzüge je 100 eigene Züge, durchschnittlicher Verlust, Trend (letzte 5 Partien
+gegen die davor, ab 10 Partien), Puzzle-Stand je Thema, Phasen, Eröffnungsfamilien (ab 3 Partien) und der Verlauf der
+Genauigkeit (interaktives Diagramm). Aussagen erst ab **5 Partien** und je Thema ab **3 Vorkommen in mindestens 2 Partien**,
+sonst steht dort „noch kein Muster“. Die Rangordnung für den Fokus ist Häufigkeit × Verlust × (1 − Beherrschung der
+Puzzles). Jedes Thema hat ein Info-Blatt: worum es geht, warum es passiert, vier Schritte „So machst du es besser“.
+
+**Wochenfokus** (`lib/mentor/focus.dart`):
+- Die App schlägt das wichtigste Thema vor, dazu zwei Alternativen; du wählst. Dasselbe Thema wie zuletzt rückt nach hinten,
+  außer der Trend wird schlechter.
+- Der Fokus läuft 7 Tage und wird an den ersten **3 danach gespielten Partien** gemessen (Partien vom Starttag zählen mit).
+- **Ziel: die Fehlzüge dieses Themas halbieren.** Erlaubt sind `abrunden(bisher je Partie × 3 × 0,5)`, bei seltenen
+  Themen also null.
+- **Automatische Auswertung** nach jeder Analyse und beim Öffnen der Seite: mehr Fehlzüge als erlaubt → verfehlt (sofort);
+  3 Partien im Ziel → erreicht; 7 Tage ohne 3 Partien → abgelaufen (kein Urteil).
+- Von den täglich fälligen Puzzles kommen die zum Fokusthema zuerst; Tagesgrenze und Stufen bleiben.
+- Merksatz und Prüffrage vor jedem Zug sind Textbausteine; optional schreibt die KI einen persönlichen Text aus
+  Kennzahlen und bis zu 3 eigenen Beispielzügen (geprüft: nur Züge und Zahlen aus den Fakten).
+
+**Rückblick** (`lib/mentor/focus_review.dart`): je beendetem Fokus Ziel und Ergebnis, Fehlzüge je Partie vorher und
+jetzt mit Prozentveränderung, Genauigkeit gegen davor, Puzzle-Versuche zum Thema, Partien der Woche und die Fehlzüge zum
+Nachschauen (Sprung zum Moment). Frühere Wochen stehen als Liste unten auf der Mentor-Seite.
+
+**Benachrichtigungen** (Schalter „Wochenfokus-Meldungen“): montags 9:00 „Wochenfokus: Thema“ mit Prüffrage bzw. „Neuer
+Wochenfokus?“ (nur wenn ein Vorschlag möglich ist) und sofort, wenn ein Fokus erreicht oder verfehlt ist. Der Text
+entsteht beim Planen und wird nach jeder Analyse und jeder Änderung neu geplant. Antippen öffnet die Mentor-Seite.
+
+## 🗄️ Datenmodell
+
+Alles liegt in einer SQLite-Datei auf dem Handy (`games.db`, Schema 5). Schlüssel und Zugangsdaten liegen nicht dort,
+sondern im Android-Keystore.
+
+```mermaid
+erDiagram
+    games ||--o{ puzzles : "Fehlzüge ab Fehler"
+    puzzles ||--o{ puzzle_attempts : "Versuche"
+    games ||--o{ ai_texts : "Besprechung"
+    puzzles ||--o{ ai_texts : "Erklärung"
+    focus }o--|| games : "gemessen an Partien der Woche"
+    games {
+        int id
+        text pgn
+        text analysis_json
+        text status
+    }
+    puzzles {
+        int ply
+        int level
+        text due
+        text moment_json
+    }
+    puzzle_attempts {
+        text result
+        int wrong
+        bool hint
+    }
+    focus {
+        text topic
+        text started_at
+        int target
+        text status
+    }
+    ai_texts {
+        text key
+        text text
+    }
+```
+
+| Tabelle | Inhalt |
+|---|---|
+| `games` | PGN, Farbe, Analyse (JSON), Status |
+| `puzzles` | Fehlzug als Puzzle: Stufe, Fälligkeit, Wiederholungen |
+| `puzzle_attempts` | jeder Versuch: erster Versuch, zweiter Versuch oder Lösung gezeigt, falsche Züge, Tipp |
+| `ai_texts` | zwischengespeicherte KI-Texte (Schlüssel: Art, Id, Sprache, Prompt-Version) |
+| `focus` | Wochenfokus: Thema, Zeitraum, Ziel, Ausgangslage, Ergebnis |
+| `meta` | Tageszähler, vorgemerkter Lernstand beim Import |
 
 ## 🌐 Online-Partien
 
@@ -224,6 +337,12 @@ adb install -r build/app/outputs/flutter-apk/app-release.apk
 - **CI** (`.github/workflows/ci.yml`): Analyse und Tests bei jedem Push, dazu ein unsignierter Prüf-Build. Die
   Flutter-Version ist festgelegt, weil neuere Versionen `package:flutter/material.dart` als veraltet melden.
 - Die Engine-Tests brauchen ein lokales Stockfish (`STOCKFISH_BIN`), sie laufen nur auf dem Heimserver.
+- **Testaufbau:** reine Logik (Analyse, Mentor, Wertung, Prüfung der KI-Texte) mit Unit-Tests, Oberfläche mit
+  Widget-Tests inklusive schmalem 360-dp-Display auf Deutsch und Englisch (Überlauf-Prüfung), Datenbank mit
+  `sqflite_common_ffi` im Arbeitsspeicher. Mit echten Daten lässt sich das Profil prüfen:
+  `PROFILE_EXPORT=<Exportdatei> flutter test test/profile_live_test.dart` (Datei bleibt außerhalb des Repos).
+- **Auf das Handy:** `tools/build-apk.sh`, dann `adb install -r` (Daten bleiben erhalten). Die Datenbank-Migration läuft beim
+  ersten Start. Vorher in der App unter „Daten sichern und übernehmen“ exportieren.
 
 ## ⚠️ Stolpersteine
 
@@ -238,6 +357,15 @@ adb install -r build/app/outputs/flutter-apk/app-release.apk
 - Bei ausgeschaltetem Bildschirm pausiert Android die Engine; deshalb gibt es den Vordergrunddienst (siehe Analyse im Hintergrund) oder, ausgeschaltet, einen wachgehaltenen Bildschirm. Ob der Dienst die Engine auf allen Geräten zuverlässig am Laufen hält, ist noch am Handy zu prüfen.
 - Die App-ID `io.github.adubdubdub.schachmentor` ist nach der ersten Weitergabe nicht mehr änderbar.
 - KI-Antworten sind nicht deterministisch: Ein Text kann bei einem Aufruf die Prüfung bestehen und beim nächsten nicht. Darum zählt immer der Rückfall.
+- **Datenschutz bei KI:** An den Anbieter gehen nur Stellungen, Züge, Bewertungen und Kennzahlen, keine Spielernamen und
+  keine Kontodaten (durch einen Test abgesichert). Bei einem fremden Anbieter sieht dieser trotzdem Partieausschnitte.
+- Die **Wochenfokus-Auswertung rechnet in ganzen Tagen**: Eine Partie zählt ab dem Starttag, auch wenn sie früher am Tag
+  gespielt wurde. Das Spieldatum kommt aus der PGN, nicht vom Importzeitpunkt.
+- Die **Wochenmeldung** wird im Voraus geplant (4 Wochen) und ist deshalb höchstens so aktuell wie die letzte
+  Planung; Android darf sie bei Energiesparmodus etwas verschieben (`inexactAllowWhileIdle`).
+- Die Themen kommen nur aus sechs Engine-Motiven und der Gewinnchance. Bei den ersten 7 echten Partien hatten 18 von 44
+  Fehlzügen kein Thema. Brett-Themen (Gabeln, ungedeckte Figuren) sind eine mögliche Erweiterung.
+- Bei geringer Datenmenge (unter 5 Partien) zeigt der Mentor bewusst keine Aussagen, nur Zahlen.
 
 ## 🗺️ Roadmap
 
@@ -247,12 +375,13 @@ adb install -r build/app/outputs/flutter-apk/app-release.apk
 - [x] **Phase 3:** Puzzles mit Wiederholung (1 · 3 · 7 · 21 · 60 Tage), tägliche Erinnerung ohne Server, Auswertung mit Gewinnchance, Folge und Begründung
 - [x] **Schritt 1:** Aufräumen: App-ID `io.github.adubdubdub.schachmentor`, Signierschlüssel, kein `testOnly`, GitHub Actions
 - [x] **Schritt 2:** Puzzles: Versuche speichern ✅, Aufstieg nur im ersten Versuch ohne Tipp ✅, zweizügige Puzzles ✅ (Folgezug wird beim Lösen auf Eindeutigkeit geprüft, Abstand ≥ 15 Prozentpunkte)
-- [ ] **Schritt 3:** KI-Texte: Heimserver (Claude Code über das KI-Gateway) und eigener Schlüssel, mit Zugprüfung (Puzzle und Besprechung; offen: Test auf dem Handy, optional Anthropic direkt)
-- [ ] **Schritt 4:** Export/Import und Übernahme der Bot-Daten (umgesetzt und per Unit-Tests geprüft; offen: Test auf dem Handy mit den echten Bot-Daten)
-- [ ] **Schritt 5:** Abruf per Benutzername (Lichess, Chess.com), mehrere Partien je PGN (umgesetzt und per Unit-Tests und Live-Abruf geprüft; offen: Test auf dem Handy)
-- [ ] **Schritt 6:** Mentor-Kern: Schwächenprofil über die letzten 20 Partien (Themen aus Motiven, Phase, „Vorteil verspielt“, Eröffnung, Puzzle-Stand) und Wochenfokus mit Vorschlag und Wahl, Puzzles zum Fokusthema zuerst; Etappen 6a Themen und Tests (umgesetzt: `lib/mentor/`), 6b Profilseite (umgesetzt: Symbol „Mentor“ in der Partieliste), 6c Wochenfokus (umgesetzt mit automatischer Auswertung), 6d KI-Text und Benachrichtigung (umgesetzt), 6e Wochenrückblick (umgesetzt)
-- [ ] **Schritt 7:** Erste Weitergabe an Familie und Freunde (GitHub Releases, Obtainium)
-- [ ] **Schritt 8:** F-Droid: Übersetzungsdateien, Barrierefreiheit, Datenschutzhinweis
+- [x] **Schritt 3:** KI-Texte: Heimserver (Claude Code über das KI-Gateway) und eigener Schlüssel, mit Zugprüfung, Kennzeichnung „✨ KI“ (Puzzle, Besprechung, Fokus; am Handy geprüft; optional später: Anthropic direkt)
+- [x] **Schritt 4:** Export/Import und Übernahme der Bot-Daten (am Handy geprüft, Bot abgebaut)
+- [x] **Schritt 5:** Abruf per Benutzername (Lichess, Chess.com), mehrere Partien je PGN, Analyse im Hintergrund (am Handy geprüft)
+- [x] **Schritt 6:** Mentor-Kern: Schwächenprofil und Wochenfokus mit Vorschlag und Wahl, automatischer Auswertung, Rückblick, KI-Text und Benachrichtigungen (siehe Abschnitt Mentor; offen: Test über mehrere Tage mit neuen Partien)
+- [ ] **Elo-Anpassung (geplant, vor Schritt 7):** Erklärungen, Tipps, Wochenfokus und KI-Texte an die geschätzte Spielstärke anpassen; Plan in der Projektnotiz
+- [ ] **Schritt 7:** Erste Weitergabe an Familie und Freunde (GitHub Releases, Obtainium), erst nach der Testzeit
+- [ ] **Schritt 8:** F-Droid: Übersetzungsdateien, Barrierefreiheit, Datenschutzhinweis (mit Angabe zur KI-Nutzung und den gesendeten Daten)
 
 iOS ist zurückgestellt.
 
