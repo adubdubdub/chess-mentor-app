@@ -126,4 +126,23 @@ void main() {
     expect(Backup(s).import('{"format":"$exportFormat","version":99}'), throwsFormatException);
     expect(looksLikeExport('1. e4 e5'), isFalse);
   });
+
+  test('mentorRecords: nur analysierte Partien, Lernstand je Puzzle, Spieldatum aus der PGN', () async {
+    final store = await _store();
+    final (id, _) = await store.add(_pgn.replaceFirst('[Result "*"]', '[Result "*"]\n[Date "2026.11.01"]'), ParsedGame.parse(_pgn)!, Side.white);
+    await store.setAnalysis(id, _analysis());
+    final (_, _) = await store.add('1. d4 d5 2. c4 e6 3. Nc3 Nf6 *', ParsedGame.parse('1. d4 d5 2. c4 e6 3. Nc3 Nf6 *')!, Side.white); // ohne Analyse
+    final pid = (await store.db.query('puzzles')).single['id']! as int;
+    await store.gradePuzzle(pid, Attempt.first);
+
+    final records = await store.mentorRecords();
+    expect(records, hasLength(1));
+    final r = records.single;
+    expect(r.playedAt, DateTime.utc(2026, 11, 1, 12));
+    expect(r.puzzles[4]!.attempts, 1);
+    expect(r.puzzles[4]!.clean, 1);
+    expect(r.puzzles[4]!.mastered, isFalse);
+    expect(r.ownMoves, 3);
+  });
 }
+

@@ -7,6 +7,7 @@ import 'package:dartchess/dartchess.dart' show Side;
 import 'package:sqflite/sqflite.dart';
 
 import '../analysis/analysis.dart';
+import '../mentor/records.dart';
 import '../puzzles/schedule.dart';
 
 enum GameStatus { waitingColor, queued, analysing, done, error }
@@ -313,6 +314,40 @@ class GameStore {
     await tx.insert('meta', {'key': key, 'value': '${done + 1}'}, conflictAlgorithm: ConflictAlgorithm.replace);
     return due;
   });
+
+  /// Analysierte Partien mit dem Lernstand ihrer Puzzles für das Schwächenprofil (neueste zuerst nach Spieldatum).
+  Future<List<GameRecord>> mentorRecords({int limit = 40}) async {
+    final stateRows = await _db.rawQuery('''
+      SELECT p.game_id, p.ply, p.level, p.due,
+             (SELECT count(*) FROM puzzle_attempts a WHERE a.puzzle_id = p.id) AS attempts,
+             (SELECT count(*) FROM puzzle_attempts a WHERE a.puzzle_id = p.id AND a.result = 'first') AS clean
+      FROM puzzles p''');
+    final states = <int, Map<int, PuzzleState>>{};
+    for (final r in stateRows) {
+      (states[r['game_id']! as int] ??= {})[r['ply']! as int] = PuzzleState(
+        level: r['level']! as int,
+        mastered: r['due'] == null,
+        attempts: r['attempts']! as int,
+        clean: r['clean']! as int,
+      );
+    }
+    final records = <GameRecord>[];
+    for (final g in await all()) {
+      final a = g.analysis;
+      if (a == null) continue;
+      records.add(
+        GameRecord.fromParts(
+          id: g.id,
+          playedAt: GameRecord.playedAtFrom(g.pgn, g.added),
+          pgn: g.pgn,
+          analysis: a,
+          puzzles: states[g.id] ?? const {},
+        ),
+      );
+    }
+    records.sort((x, y) => y.playedAt.compareTo(x.playedAt));
+    return records.take(limit).toList();
+  }
 
   Future<int> doneToday() async {
     final r = await _db.query('meta', where: 'key = ?', whereArgs: ['puzzles:${isoDay(DateTime.now())}']);
