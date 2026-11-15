@@ -16,9 +16,12 @@ class FocusState {
 }
 
 class FocusKeeper {
-  FocusKeeper(this.store);
+  FocusKeeper(this.store, {this.onVerdict});
 
   final GameStore store;
+
+  /// Wird einmal aufgerufen, wenn ein Fokus entschieden wurde (z. B. für eine Benachrichtigung).
+  final Future<void> Function(FocusEntry focus, FocusStatus status)? onVerdict;
 
   /// Fokus auswerten; ein neu entschiedener Fokus (erreicht, verfehlt, abgelaufen) wird gespeichert und beendet.
   Future<FocusState> refresh({DateTime? now}) async {
@@ -29,6 +32,7 @@ class FocusKeeper {
     final progress = evaluateFocus(active, records, t);
     if (progress.status != FocusStatus.active) {
       await store.closeFocus(active.id!, progress.status, t);
+      await onVerdict?.call(active, progress.status);
       return FocusState(lastClosed: (await store.lastClosedFocus()), progress: progress);
     }
     return FocusState(active: active, progress: progress, lastClosed: await store.lastClosedFocus());

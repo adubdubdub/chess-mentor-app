@@ -13,6 +13,7 @@ import 'mentor/focus_keeper.dart';
 import 'puzzles/reminders.dart';
 import 'ui/app_scope.dart';
 import 'ui/home_page.dart';
+import 'ui/mentor_page.dart';
 import 'ui/puzzle_page.dart';
 
 Future<void> main() async {
@@ -28,10 +29,11 @@ Future<void> main() async {
   await reminders.init();
   service.onAnalysed = () async {
     await reminders.reschedule();
-    await FocusKeeper(store).refresh(); // Wochenfokus nach jeder neuen Analyse auswerten
+    await FocusKeeper(store, onVerdict: reminders.showFocusResult).refresh(); // Wochenfokus nach jeder Analyse auswerten
+    await reminders.rescheduleFocus();
   };
   settings.addListener(reminders.reschedule);
-  reminders.onOpen = _openPuzzles;
+  reminders.onOpen = _openFromReminder;
   service.resume();
   runApp(
     AppScope(
@@ -48,8 +50,9 @@ Future<void> main() async {
   fetch.autoFetch(); // ohne await: Fehler (kein Netz) dürfen den Start nicht verzögern
   await reminders.requestPermission();
   await reminders.reschedule();
-  if (await reminders.launchedFromReminder()) {
-    WidgetsBinding.instance.addPostFrameCallback((_) => _openPuzzles());
+  final launch = await reminders.launchedFromReminder();
+  if (launch != null) {
+    WidgetsBinding.instance.addPostFrameCallback((_) => _openFromReminder(launch.payload));
   }
 }
 
@@ -57,6 +60,11 @@ Future<void> main() async {
 final navigatorKey = GlobalKey<NavigatorState>();
 
 void _openPuzzles() => navigatorKey.currentState?.push(MaterialPageRoute<void>(builder: (_) => const PuzzlePage()));
+
+/// Puzzle-Erinnerungen öffnen die Puzzles, Wochenfokus-Meldungen die Mentor-Seite.
+void _openFromReminder(String? payload) => payload == mentorPayload
+    ? navigatorKey.currentState?.push(MaterialPageRoute<void>(builder: (_) => const MentorPage()))
+    : _openPuzzles();
 
 class ChessMentorApp extends StatelessWidget {
   const ChessMentorApp({super.key});

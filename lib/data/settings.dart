@@ -48,6 +48,10 @@ class Settings extends ChangeNotifier {
   DateTime? get lastFetch => DateTime.tryParse(_prefs.getString('lastFetch') ?? '');
   set lastFetch(DateTime? v) => _set(() => v == null ? _prefs.remove('lastFetch') : _prefs.setString('lastFetch', v.toIso8601String()));
 
+  /// Benachrichtigungen zum Wochenfokus (Wochenanfang, Ergebnis).
+  bool get focusReminders => _prefs.getBool('focusReminders') ?? true;
+  set focusReminders(bool v) => _set(() => _prefs.setBool('focusReminders', v));
+
   bool get reminders => _prefs.getBool('reminders') ?? true;
   set reminders(bool v) => _set(() => _prefs.setBool('reminders', v));
 

@@ -26,6 +26,8 @@ class _MentorPageState extends State<MentorPage> {
   List<GameRecord>? _records;
   FocusState _focus = const FocusState();
   int _duePuzzles = 0;
+  String? _aiText;
+  bool _aiLoading = false;
   bool _started = false;
 
   @override
@@ -47,6 +49,35 @@ class _MentorPageState extends State<MentorPage> {
         _focus = focus;
         _duePuzzles = due;
       });
+      _loadAi(records, focus);
+    }
+  }
+
+  /// Persönlicher KI-Text zum Fokus (laufend) oder zum ersten Vorschlag; ohne KI oder bei Fehlern bleibt es leer.
+  Future<void> _loadAi(List<GameRecord> records, FocusState focus) async {
+    final scope = AppScope.of(context);
+    final de = Tr.of(context).de;
+    if (!scope.ai.enabled || records.isEmpty) {
+      if (_aiText != null) setState(() => _aiText = null);
+      return;
+    }
+    final profile = buildProfile(records);
+    final topic = focus.active?.topic;
+    final suggestions = suggestFocus(profile, lastTopic: focus.lastClosed?.topic);
+    final pick = topic == null
+        ? (suggestions.isEmpty ? null : suggestions.first)
+        : suggestFocus(profile, count: 7).where((s) => s.topic == topic).firstOrNull;
+    if (pick == null) return;
+    setState(() {
+      _aiLoading = true;
+      _aiText = null;
+    });
+    final text = await scope.ai.focusText(pick, records, de: de);
+    if (mounted) {
+      setState(() {
+        _aiText = text;
+        _aiLoading = false;
+      });
     }
   }
 
@@ -54,19 +85,24 @@ class _MentorPageState extends State<MentorPage> {
 
   Widget _card(BuildContext context, List<GameRecord> records) {
     final store = AppScope.of(context).store;
+    final reminders = AppScope.of(context).reminders;
     final profile = _profile(records);
     return FocusCard(
       state: _focus,
       profile: profile,
       duePuzzles: _duePuzzles,
+      aiText: _aiText,
+      aiLoading: _aiLoading,
       suggestions: _focus.active != null ? const [] : suggestFocus(profile, lastTopic: _focus.lastClosed?.topic),
       onStart: (s) async {
         await store.startFocus(startFocusFrom(s, DateTime.now()));
+        await reminders.rescheduleFocus();
         await _load();
       },
       onCancel: () async {
         final f = _focus.active;
         if (f != null) await store.closeFocus(f.id!, FocusStatus.cancelled, DateTime.now());
+        await reminders.rescheduleFocus();
         await _load();
       },
       onPractice: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const PuzzlePage())).then((_) => _load()),

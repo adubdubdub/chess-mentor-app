@@ -47,3 +47,14 @@ bool revealsMove(String text, String san) {
   }
   return false;
 }
+
+/// Zahlen im Text, die nicht in [allowed] stehen (z. B. Zählwerte aus den Fakten und Zugnummern). Leer = in Ordnung.
+/// Zahlen innerhalb von Zügen („Sf3“, „e4“) zählen nicht, nur freistehende Ganzzahlen und Zugnummern („7.f4“).
+List<int> unknownNumbers(String text, Set<int> allowed) {
+  final bad = <int>[];
+  for (final m in RegExp(r'(?<![A-Za-z\d])(\d{1,4})(?![A-Za-z\d])').allMatches(text)) {
+    final n = int.parse(m.group(1)!);
+    if (!allowed.contains(n)) bad.add(n);
+  }
+  return bad.toSet().toList();
+}

@@ -15,6 +15,8 @@ class FocusCard extends StatelessWidget {
     required this.suggestions,
     required this.profile,
     this.duePuzzles = 0,
+    this.aiText,
+    this.aiLoading = false,
     this.onStart,
     this.onCancel,
     this.onPractice,
@@ -26,6 +28,10 @@ class FocusCard extends StatelessWidget {
 
   /// Heute fällige Puzzles zum Fokusthema.
   final int duePuzzles;
+
+  /// Persönlicher KI-Text zum Thema (null = keiner) und ob er gerade geladen wird.
+  final String? aiText;
+  final bool aiLoading;
   final void Function(FocusSuggestion suggestion)? onStart;
   final VoidCallback? onCancel;
   final VoidCallback? onPractice;
@@ -55,6 +61,25 @@ class FocusCard extends StatelessWidget {
           );
   }
 
+  Widget _personal(Tr tr, ThemeData theme) {
+    if (aiText != null) {
+      return Padding(
+        padding: const EdgeInsets.only(top: 10),
+        child: Text('💬 $aiText'),
+      );
+    }
+    if (aiLoading) {
+      return Padding(
+        padding: const EdgeInsets.only(top: 10),
+        child: Text(
+          tr.t('Der Mentor schreibt dir einen persönlichen Hinweis …', 'The mentor is writing you a personal note …'),
+          style: theme.textTheme.bodySmall,
+        ),
+      );
+    }
+    return const SizedBox.shrink();
+  }
+
   Widget _active(BuildContext context, Tr tr, ThemeData theme, FocusEntry f) {
     final p = state.progress;
     final games = p?.games ?? 0, occ = p?.occurrences ?? 0;
@@ -73,6 +98,7 @@ class FocusCard extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         Text(tr.topicRule(f.topic)),
+        _personal(tr, theme),
         const SizedBox(height: 8),
         Text('❓ ${tr.t('Vor jedem Zug', 'Before every move')}: ${tr.topicCheck(f.topic)}', style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
         const SizedBox(height: 12),
@@ -161,6 +187,7 @@ class FocusCard extends StatelessWidget {
           ],
         ),
         Text(tr.topicHint(first.topic)),
+        _personal(tr, theme),
         const SizedBox(height: 6),
         Text(
           tr.t(

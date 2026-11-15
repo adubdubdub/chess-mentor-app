@@ -9,6 +9,10 @@ import 'package:flutter/foundation.dart';
 import '../data/game_store.dart';
 import '../data/settings.dart';
 import '../analysis/analysis.dart';
+import '../mentor/focus.dart';
+import '../mentor/profile.dart';
+import '../mentor/records.dart';
+import 'focus_text.dart';
 import 'prompts.dart';
 import 'provider.dart';
 import 'review_texts.dart';
@@ -86,6 +90,28 @@ class MentorAi {
       }
       await store.putAiText(key, jsonEncode(texts.toJson()));
       return texts;
+    } on AiException catch (e) {
+      debugPrint('KI nicht verfügbar: $e');
+      return null;
+    }
+  }
+
+  /// Persönlicher Text zum Fokusthema aus den Kennzahlen und eigenen Beispielzügen; null = kein KI-Text.
+  Future<String?> focusText(FocusSuggestion s, List<GameRecord> records, {required bool de}) async {
+    final examples = topicMoments(s.topic, records);
+    final facts = focusFacts(s, examples, de: de);
+    final cached = await store.aiText(facts.cacheKey);
+    if (cached != null) return cached;
+    final provider = await _provider();
+    if (provider == null) return null;
+    try {
+      final text = checkFocusText(await provider.complete(focusPrompt(facts, de: de)), facts);
+      if (text == null) {
+        debugPrint('KI-Fokustext verworfen (Prüfung nicht bestanden)');
+        return null;
+      }
+      await store.putAiText(facts.cacheKey, text);
+      return text;
     } on AiException catch (e) {
       debugPrint('KI nicht verfügbar: $e');
       return null;

@@ -252,6 +252,18 @@ class _EnginePageState extends State<EnginePage> {
             ),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
+              title: Text(tr.t('Wochenfokus-Meldungen', 'Weekly focus notifications')),
+              subtitle: Text(
+                tr.t(
+                  'Montags um 9:00 und wenn ein Fokus entschieden ist',
+                  'Mondays at 9:00 and when a focus has been decided',
+                ),
+              ),
+              value: settings.focusReminders,
+              onChanged: (v) => settings.focusReminders = v,
+            ),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
               title: Text(tr.t('Tägliche Erinnerung', 'Daily reminder')),
               subtitle: Text(tr.t('Nur an Tagen mit fälligen Puzzles', 'Only on days with due puzzles')),
               value: settings.reminders,
