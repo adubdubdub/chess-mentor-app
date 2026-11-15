@@ -17,6 +17,7 @@ import 'app_scope.dart';
 import 'data_page.dart';
 import 'engine_page.dart';
 import 'game_page.dart';
+import 'mentor_page.dart';
 import 'puzzle_page.dart';
 import 'mistake_icons.dart';
 import 'strings.dart';
@@ -250,6 +251,11 @@ class _HomePageState extends State<HomePage> {
               tooltip: tr.t('Neue Online-Partien holen', 'Fetch new online games'),
               onPressed: _fetchOnline,
             ),
+          IconButton(
+            icon: const Icon(Icons.insights),
+            tooltip: tr.t('Mentor', 'Mentor'),
+            onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const MentorPage())),
+          ),
           IconButton(
             icon: const Icon(Icons.settings),
             tooltip: tr.t('Einstellungen', 'Settings'),

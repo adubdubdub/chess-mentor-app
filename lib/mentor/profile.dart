@@ -253,3 +253,14 @@ Profile buildProfile(List<GameRecord> records, {int window = profileWindow, int 
 }
 
 double? _mean(List<int> xs) => xs.isEmpty ? null : xs.reduce((a, b) => a + b) / xs.length;
+
+/// Die Fehlzüge zu einem Thema (neueste Partie zuerst, innerhalb einer Partie nach Zugfolge) für die Detailansicht.
+/// Gleiches Fenster wie [buildProfile].
+List<({GameRecord game, Moment moment})> topicMoments(Topic topic, List<GameRecord> records, {int window = profileWindow}) {
+  final games = ([...records]..sort((a, b) => b.playedAt.compareTo(a.playedAt))).take(window);
+  return [
+    for (final g in games)
+      for (final m in ([...g.analysis.flagged]..sort((a, b) => a.ply.compareTo(b.ply))))
+        if (topicsOf(m).contains(topic)) (game: g, moment: m),
+  ];
+}
