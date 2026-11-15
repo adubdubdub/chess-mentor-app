@@ -34,10 +34,11 @@ class _FocusReviewPageState extends State<FocusReviewPage> {
 
   Future<void> _load() async {
     final store = AppScope.of(context).store;
+    final level = AppScope.of(context).settings.level;
     final records = await store.mentorRecords();
     final stats = await store.focusPuzzleStats(widget.focus);
     final profile = buildProfile(records);
-    final suggestions = suggestFocus(profile, lastTopic: widget.focus.topic);
+    final suggestions = suggestFocus(profile, lastTopic: widget.focus.topic, level: level);
     if (!mounted) return;
     setState(() {
       _review = buildFocusReview(widget.focus, records, puzzleAttempts: stats.attempts, puzzleClean: stats.clean);

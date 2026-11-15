@@ -85,7 +85,7 @@ class Reminders {
     if (!settings.focusReminders) return;
     final tr = Tr(PlatformDispatcher.instance.locale.languageCode == 'de');
     final active = await store.activeFocus();
-    final hasSuggestion = suggestFocus(buildProfile(await store.mentorRecords())).isNotEmpty;
+    final hasSuggestion = suggestFocus(buildProfile(await store.mentorRecords()), level: settings.level).isNotEmpty;
     final now = tz.TZDateTime.now(tz.local);
     var monday = tz.TZDateTime(tz.local, now.year, now.month, now.day, 9);
     monday = monday.add(Duration(days: (DateTime.monday - monday.weekday + 7) % 7));

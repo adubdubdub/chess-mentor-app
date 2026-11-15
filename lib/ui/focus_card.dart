@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../mentor/focus.dart';
 import '../mentor/focus_keeper.dart';
+import '../mentor/level_texts.dart';
 import '../mentor/profile.dart';
 import '../mentor/strength.dart';
 import '../mentor/topic_texts.dart';
@@ -215,6 +216,14 @@ class FocusCard extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         Text(_goal(tr, first.target, first.goalGames, first.stat.count, first.baselineGames)),
+        if (level != null)
+          Text(
+            tr.t(
+              'Gewichtung und Ziel sind auf deine Stufe „${tr.levelName(level!)}“ abgestimmt.',
+              'Weighting and goal are tuned to your level “${tr.levelName(level!)}”.',
+            ),
+            style: theme.textTheme.bodySmall,
+          ),
         const SizedBox(height: 12),
         FilledButton.icon(
           onPressed: onStart == null ? null : () => onStart!(first),

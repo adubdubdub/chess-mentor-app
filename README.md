@@ -4,8 +4,8 @@ Stockfish rechnet, du lernst: Android-App, die eigene Schachpartien auf dem Hand
 und als Puzzles mit Wiederholung einübt. Ohne eigenen Server und ohne Pflicht-Schlüssel. Entstanden aus einem privaten
 Telegram-Bot, den die App seit November 2026 ersetzt.
 
-> **Stand (15.11.2026): Schritte 1–6 umgesetzt, Testzeit am Handy läuft.** Geplant sind als Nächstes die Anpassung der
-> Erklärungen an die Spielstärke (Plan siehe Roadmap), danach Schritt 7 (Weitergabe) erst nach der Testzeit.
+> **Stand (15.11.2026): Schritte 1–6 umgesetzt, Testzeit am Handy läuft.** Die Erklärungen passen sich an die geschätzte
+> Spielstärke an (E1–E4 umgesetzt); Schritt 7 (Weitergabe) kommt erst nach der Testzeit.
 >
 > Partien kommen per Teilen, Einfügen, Datei oder Benutzername von Lichess und Chess.com in die App. Stockfish analysiert sie
 > auf dem Handy: Genauigkeit, Fehler-Einstufung, Verlauf und Schlüsselmomente mit Pfeilen und Varianten. Dazu kommen die
@@ -59,7 +59,7 @@ chess-mentor-app/
 │   ├── analysis/        Port von analysis.py: Gewinnchance, Einstufung, Momente, Motive (reines Dart, testbar)
 │   ├── coach/           Texte des Mentors ohne Sprachmodell: Fragen, Tipps, Erklärungen, Lernpunkt
 │   ├── ai/              KI-Texte: Anbieter, Prompts, Prüfung gegen Engine-Fakten, Zwischenspeicher, Schlüssel (Keystore)
-│   ├── mentor/          Schwächen-Themen, Profil, Wochenfokus, Auswertung, Rückblick, Texte und Benachrichtigungen (reines Dart, testbar)
+│   ├── mentor/          Schwächen-Themen, Profil, Wochenfokus, Auswertung, Rückblick, Spielstärke und Stufen, Texte, Benachrichtigungen (reines Dart, testbar)
 │   ├── puzzles/         Wiederholungsplan (Stufen, Wertung), Folgezug zweizügiger Puzzles, Erinnerungen
 │   ├── engine/          Stockfish auf dem Handy (kleines/großes Netz), Netz-Download, Analyse-Warteschlange, Vordergrunddienst
 │   ├── fetch/           Online-Partien von Lichess und Chess.com per Benutzername
@@ -183,6 +183,51 @@ Nachschauen (Sprung zum Moment). Frühere Wochen stehen als Liste unten auf der 
 **Benachrichtigungen** (Schalter „Wochenfokus-Meldungen“): montags 9:00 „Wochenfokus: Thema“ mit Prüffrage bzw. „Neuer
 Wochenfokus?“ (nur wenn ein Vorschlag möglich ist) und sofort, wenn ein Fokus erreicht oder verfehlt ist. Der Text
 entsteht beim Planen und wird nach jeder Analyse und jeder Änderung neu geplant. Antippen öffnet die Mentor-Seite.
+
+## 📏 Spielstärke und Stufen
+
+Die App schätzt deine Spielstärke und passt danach KI-Texte, Info-Blätter und den Wochenfokus an (Einstellungen →
+„Spielstärke“). Die Schätzung ist immer sichtbar, mit Quelle und Sicherheit, und lässt sich selbst eintragen.
+
+```mermaid
+flowchart LR
+    O["☁️ Lichess und Chess.com<br/>Online-Wertungen"] --> M
+    G["📊 Eigene Partien<br/>Genauigkeit"] --> M
+    I["1200<br/>Ausgangswert"] --> M
+    M(["📏 Schätzung<br/>gewichtet und geglättet"]) --> L["🪜 Stufe 1–4<br/>mit Hysterese"]
+    H["✍️ Manuell"] ==> L
+    L --> K["🤖 KI-Prompts<br/>Zahl und Stil"]
+    L --> T["📘 Info-Blätter und<br/>Prüffragen je Stufe"]
+    L --> F["🎯 Fokus: Gewichte<br/>und Härte des Ziels"]
+```
+
+| Stufe | Elo | Stil der KI | Fokus-Gewichte (Faktor auf die Punktzahl) | Ziel (erlaubter Anteil) |
+|---|---|---|---|---|
+| 1 Einsteiger | unter 1000 | sehr einfach, Grundregeln | Figur eingestellt ×1,5, Matt zugelassen ×1,3, Material verpasst ×1,2, Vorteil verspielt und schlechte Stellung ×0,6 | 0,6 |
+| 2 Fortgeschrittener Anfänger | 1000–1400 | einfach, Prüffragen, Taktikmuster | Figur eingestellt ×1,2 | 0,5 |
+| 3 Mittelstufe | 1400–1800 | Fachbegriffe, Pläne, Muster | Vorteil verspielt ×1,2, schlechte Stellung ×1,1 | 0,45 |
+| 4 Fortgeschritten | über 1800 | knapp, Prophylaxe, Abwägen | Vorteil verspielt ×1,5, schlechte Stellung ×1,3, Schachgebot ×0,8 | 0,4 |
+
+Alle Faktoren sind Startwerte und werden nach der Testzeit an echten Daten nachjustiert.
+
+**Schätzung** (`lib/mentor/strength.dart`):
+- **Online:** Lichess (`/api/user/<name>`, `perfs`) und Chess.com (`/pub/player/<name>/stats`). Gewicht je Spielart =
+  min(Partien, 50) × Spielart (klassisch und Rapid 1,0, Blitz 0,8, Bullet und Fernschach 0,5), **vorläufige Wertungen nur 20 %**
+  (Chess.com: unter 10 Partien). Chess.com wird grob um 150 Punkte auf die Lichess-Skala gesenkt (Annahme).
+- **Eigene Partien:** durchschnittliche Genauigkeit wird linear in Elo umgerechnet (80 % ≈ 1200, 90 % ≈ 1800), immer niedrige Sicherheit.
+- **Mischung:** Ab Gewicht 40 gilt die Online-Wertung allein, sonst werden Online, Partien und der Ausgangswert 1200 nach
+  Gewicht gemischt. Ein früherer automatischer Wert glättet (halber Schritt). **Manuell hat immer Vorrang.**
+- **Stufenwechsel:** Erst wenn die Schätzung zweimal in Folge mindestens 50 Elo jenseits der Grenze liegt, wechselt die Stufe,
+  damit sich Texte nicht ständig ändern. Manuell wechselt sofort.
+- **Aktualisierung:** beim Start (nach dem Online-Abruf), nach jeder Analyse und mit „Jetzt neu schätzen“.
+
+**Wirkung**
+- **KI:** Der Prompt nennt die auf 50 gerundete Elo und die Stufe plus eine Stilvorgabe. Die Stufe steckt im
+  Zwischenspeicher-Schlüssel, bei einem Stufenwechsel werden Texte neu erzeugt. Mit dem Schalter „Spielstärke an die KI
+  senden“ aus geht nur die Stufe ohne Zahl.
+- **Texte:** Jedes Info-Blatt hat drei gemeinsame Schritte und einen vierten je Stufe; die Prüffrage vor jedem Zug
+  (Fokuskarte, Wochenmeldung) richtet sich ebenfalls nach der Stufe. Merksatz und Lernpunkt bleiben allgemein.
+- **Wochenfokus:** Die Stufe gewichtet die Themen und bestimmt die Härte des Ziels; die Vorschlagskarte nennt das.
 
 ## 🗄️ Datenmodell
 
@@ -379,10 +424,7 @@ adb install -r build/app/outputs/flutter-apk/app-release.apk
 - [x] **Schritt 4:** Export/Import und Übernahme der Bot-Daten (am Handy geprüft, Bot abgebaut)
 - [x] **Schritt 5:** Abruf per Benutzername (Lichess, Chess.com), mehrere Partien je PGN, Analyse im Hintergrund (am Handy geprüft)
 - [x] **Schritt 6:** Mentor-Kern: Schwächenprofil und Wochenfokus mit Vorschlag und Wahl, automatischer Auswertung, Rückblick, KI-Text und Benachrichtigungen (siehe Abschnitt Mentor; offen: Test über mehrere Tage mit neuen Partien)
-- [ ] **Elo-Anpassung (geplant, vor Schritt 7):** Erklärungen, Tipps, Wochenfokus und KI-Texte an die geschätzte Spielstärke anpassen.
-  - Spielstärke automatisch (Online-Wertung von Lichess und Chess.com, vorläufige Wertungen zählen wenig, plus eigene Partien) oder manuell, immer mit Anzeige von Quelle und Sicherheit; vier Stufen (< 1000, 1000–1400, 1400–1800, > 1800) mit Hysterese gegen Textwechsel.
-  - E1 Schätzung und Einstellungen · E2 Stufenmodell und KI-Prompts · E3 Texte je Stufe (Info-Blätter, Merksatz, Prüffrage, Lernpunkt) · E4 Fokus-Gewichte und Ziele je Stufe.
-  - Später nach der Testzeit: Puzzle-Schwellen nach Stufe, Richtwerte „typisch für dein Niveau“, Brett-Themen.
+- [x] **Elo-Anpassung:** Spielstärke schätzen (Online-Wertung, eigene Partien, manuell) und KI-Prompts, Info-Blätter, Prüffragen und Wochenfokus an die Stufe anpassen (siehe Abschnitt Spielstärke; E1–E4 umgesetzt, offen: Test am Handy; später: Puzzle-Schwellen nach Stufe, Richtwerte)
 - [ ] **Schritt 7:** Erste Weitergabe an Familie und Freunde (GitHub Releases, Obtainium), erst nach der Testzeit
 - [ ] **Schritt 8:** F-Droid: Übersetzungsdateien, Barrierefreiheit, Datenschutzhinweis (mit Angabe zur KI-Nutzung und den gesendeten Daten)
 

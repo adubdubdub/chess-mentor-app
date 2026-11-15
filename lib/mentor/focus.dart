@@ -3,6 +3,7 @@ library;
 
 import 'profile.dart';
 import 'records.dart';
+import 'strength.dart';
 import 'topics.dart';
 
 enum FocusStatus {
@@ -81,24 +82,57 @@ class FocusSuggestion {
   Topic get topic => stat.topic;
 }
 
+/// Faktor je Stufe für das Ziel: Anteil der bisherigen Fehlzüge, der in den Zielpartien noch erlaubt ist.
+/// Anfänger bekommen ein milderes, Stärkere ein strengeres Ziel (Startwerte, nach der Testzeit nachjustieren).
+const goalFactors = {Level.beginner: 0.6, Level.advancedBeginner: 0.5, Level.intermediate: 0.45, Level.advanced: 0.4};
+
+/// Ohne Stufe gilt die Hälfte.
+double goalFactor(Level? level) => level == null ? 0.5 : goalFactors[level]!;
+
+/// Gewichte auf die Themen-Punktzahl je Stufe: unten zuerst Sicherheit im Taktischen, oben Vorteil verwerten und
+/// Verteidigung (Startwerte). Nicht genannte Themen zählen 1,0.
+const topicWeights = <Level, Map<Topic, double>>{
+  Level.beginner: {
+    Topic.hangsPiece: 1.5,
+    Topic.allowsMate: 1.3,
+    Topic.missedMaterial: 1.2,
+    Topic.advantageLost: 0.6,
+    Topic.whenWorse: 0.6,
+  },
+  Level.advancedBeginner: {Topic.hangsPiece: 1.2},
+  Level.intermediate: {Topic.advantageLost: 1.2, Topic.whenWorse: 1.1},
+  Level.advanced: {Topic.advantageLost: 1.5, Topic.whenWorse: 1.3, Topic.missedCheck: 0.8},
+};
+
+double topicWeight(Level? level, Topic topic) => level == null ? 1.0 : (topicWeights[level]?[topic] ?? 1.0);
+
 /// Ziel: die Fehlzüge dieses Themas halbieren. Erwartet werden bisher `count / games` je Partie; erlaubt sind in
 /// [goalGames] Partien die Hälfte davon, abgerundet (bei seltenen Themen also null).
-int targetFor(int count, int games, int goalGames) => games == 0 ? 0 : (count / games * goalGames * 0.5).floor();
+int targetFor(int count, int games, int goalGames, {double factor = 0.5}) =>
+    games == 0 ? 0 : (count / games * goalGames * factor).floor();
 
-/// Bis zu [count] Themen für den nächsten Fokus, das beste zuerst. Nur Themen mit genug Daten.
+/// Bis zu [count] Themen für den nächsten Fokus, das beste zuerst. Nur Themen mit genug Daten. Mit [level] gewichten
+/// die Stufe die Themen ([topicWeights]) und bestimmen die Härte des Ziels ([goalFactors]).
 /// Dasselbe Thema wie beim letzten Fokus rückt nach hinten, außer es wird gerade schlechter.
-List<FocusSuggestion> suggestFocus(Profile p, {Topic? lastTopic, int goalGames = focusGames, int count = 3}) {
+List<FocusSuggestion> suggestFocus(
+  Profile p, {
+  Topic? lastTopic,
+  int goalGames = focusGames,
+  int count = 3,
+  Level? level,
+}) {
   final candidates = [...p.candidates];
   bool repeat(TopicStat t) => lastTopic != null && t.topic == lastTopic && !((t.trend ?? 0) > 0.3);
   candidates.sort((a, b) {
     final ra = repeat(a) ? 1 : 0, rb = repeat(b) ? 1 : 0;
-    return ra != rb ? ra.compareTo(rb) : b.score.compareTo(a.score);
+    if (ra != rb) return ra.compareTo(rb);
+    return (b.score * topicWeight(level, b.topic)).compareTo(a.score * topicWeight(level, a.topic));
   });
   return [
     for (final t in candidates.take(count))
       FocusSuggestion(
         stat: t,
-        target: targetFor(t.count, p.games, goalGames),
+        target: targetFor(t.count, p.games, goalGames, factor: goalFactor(level)),
         goalGames: goalGames,
         baselineGames: p.games,
       ),

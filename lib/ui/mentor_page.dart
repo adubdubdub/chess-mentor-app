@@ -70,7 +70,7 @@ class _MentorPageState extends State<MentorPage> {
     final suggestions = suggestFocus(profile, lastTopic: focus.lastClosed?.topic);
     final pick = topic == null
         ? (suggestions.isEmpty ? null : suggestions.first)
-        : suggestFocus(profile, count: 7).where((s) => s.topic == topic).firstOrNull;
+        : suggestFocus(profile, count: 7, level: AppScope.of(context).settings.level).where((s) => s.topic == topic).firstOrNull;
     if (pick == null) return;
     setState(() {
       _aiLoading = true;
@@ -125,7 +125,7 @@ class _MentorPageState extends State<MentorPage> {
       duePuzzles: _duePuzzles,
       aiText: _aiText,
       aiLoading: _aiLoading,
-      suggestions: _focus.active != null ? const [] : suggestFocus(profile, lastTopic: _focus.lastClosed?.topic),
+      suggestions: _focus.active != null ? const [] : suggestFocus(profile, lastTopic: _focus.lastClosed?.topic, level: AppScope.of(context).settings.level),
       onStart: (s) async {
         await store.startFocus(startFocusFrom(s, DateTime.now()));
         await reminders.rescheduleFocus();
