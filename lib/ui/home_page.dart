@@ -11,7 +11,9 @@ import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 import '../analysis/analysis.dart';
 import '../data/game_store.dart';
 import '../engine/analysis_service.dart';
+import '../data/backup.dart';
 import 'app_scope.dart';
+import 'data_page.dart';
 import 'engine_page.dart';
 import 'game_page.dart';
 import 'puzzle_page.dart';
@@ -92,6 +94,12 @@ class _HomePageState extends State<HomePage> {
   Future<void> _import(String pgn) async {
     final scope = AppScope.of(context);
     final tr = Tr.of(context);
+    if (looksLikeExport(pgn)) {
+      final msg = await importExportText(context, pgn);
+      await _reload();
+      _snack(msg);
+      return;
+    }
     final parsed = ParsedGame.parse(pgn.trim());
     if (parsed == null) {
       _snack(tr.invalidPgn);

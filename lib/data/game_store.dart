@@ -45,28 +45,35 @@ class GameStore {
 
   final Database _db;
 
-  static Future<GameStore> open() async {
-    final db = await openDatabase(
-      'games.db',
-      version: 4,
-      onCreate: (db, _) async {
-        await db.execute(_gamesTable);
-        await _createPuzzles(db);
-        await _createAttempts(db);
-        await _createAiTexts(db);
-      },
-      onUpgrade: (db, from, _) async {
-        if (from < 4) await _createAiTexts(db);
-        if (from < 3) await _createAttempts(db);
-        if (from < 2) {
+  /// Für Export und Import (lib/data/backup.dart).
+  Database get db => _db;
+
+  /// [factory] und [path] nur für Tests (SQLite im Arbeitsspeicher).
+  static Future<GameStore> open({DatabaseFactory? factory, String path = 'games.db'}) async {
+    final db = await (factory ?? databaseFactory).openDatabase(
+      path,
+      options: OpenDatabaseOptions(
+        version: 4,
+        singleInstance: factory == null,
+        onCreate: (db, _) async {
+          await db.execute(_gamesTable);
           await _createPuzzles(db);
-          // Fehler aus schon analysierten Partien als Puzzles übernehmen
-          for (final row in await db.query('games', where: 'analysis IS NOT NULL')) {
-            final g = StoredGame(row);
-            await _insertPuzzles(db, g.id, g.analysis!.puzzles);
+          await _createAttempts(db);
+          await _createAiTexts(db);
+        },
+        onUpgrade: (db, from, _) async {
+          if (from < 4) await _createAiTexts(db);
+          if (from < 3) await _createAttempts(db);
+          if (from < 2) {
+            await _createPuzzles(db);
+            // Fehler aus schon analysierten Partien als Puzzles übernehmen
+            for (final row in await db.query('games', where: 'analysis IS NOT NULL')) {
+              final g = StoredGame(row);
+              await _insertPuzzles(db, g.id, g.analysis!.puzzles);
+            }
           }
-        }
-      },
+        },
+      ),
     );
     return GameStore._(db);
   }
@@ -138,6 +145,50 @@ class GameStore {
         'due': due,
       }, conflictAlgorithm: ConflictAlgorithm.ignore);
     }
+    // Übernommener Lernstand (Import ohne Analyse) auf die neu entstandenen Puzzles anwenden
+    final key = 'pending:$gameId';
+    final pending = await db.query('meta', where: 'key = ?', whereArgs: [key]);
+    if (pending.isNotEmpty) {
+      await applyPuzzleStates(db, gameId, jsonDecode(pending.first['value']! as String) as List);
+      await db.delete('meta', where: 'key = ?', whereArgs: [key]);
+    }
+  }
+
+  /// Lernstand (ply, level, due, reps, lapses, attempts, ai) auf vorhandene Puzzles einer Partie übertragen.
+  /// Gibt zurück, wie viele Puzzles gefunden wurden; Stände ohne passendes Puzzle (ply) werden übersprungen.
+  static Future<int> applyPuzzleStates(DatabaseExecutor db, int gameId, List<dynamic> states) async {
+    var applied = 0;
+    for (final raw in states) {
+      final s = raw as Map<String, dynamic>;
+      final rows = await db.query('puzzles', columns: ['id'], where: 'game_id = ? AND ply = ?', whereArgs: [gameId, s['ply']]);
+      if (rows.isEmpty) continue;
+      final id = rows.first['id']! as int;
+      await db.update(
+        'puzzles',
+        {'level': s['level'], 'due': s['due'], 'reps': s['reps'] ?? 0, 'lapses': s['lapses'] ?? 0},
+        where: 'id = ?',
+        whereArgs: [id],
+      );
+      for (final a in (s['attempts'] as List? ?? const [])) {
+        final m = a as Map<String, dynamic>;
+        await db.insert('puzzle_attempts', {
+          'puzzle_id': id,
+          'at': m['at'],
+          'result': m['result'],
+          'wrong': m['wrong'] ?? 0,
+          'hint': m['hint'] == true ? 1 : 0,
+        });
+      }
+      for (final e in ((s['ai'] as Map<String, dynamic>?) ?? const {}).entries) {
+        await db.insert('ai_texts', {
+          'key': 'puzzle:$id:${e.key}',
+          'text': e.value,
+          'created': DateTime.now().toIso8601String(),
+        }, conflictAlgorithm: ConflictAlgorithm.replace);
+      }
+      applied++;
+    }
+    return applied;
   }
 
   /// Neue Partie speichern; ist dieselbe Zugfolge schon da, deren id. Zweiter Wert: neu angelegt?

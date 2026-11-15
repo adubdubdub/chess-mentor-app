@@ -7,6 +7,7 @@ import '../data/settings.dart';
 import '../engine/mobile_engine.dart';
 import '../engine/net_manager.dart';
 import 'ai_page.dart';
+import 'data_page.dart';
 import 'app_scope.dart';
 import 'strings.dart';
 
@@ -138,6 +139,14 @@ class _EnginePageState extends State<EnginePage> {
               }),
               trailing: const Icon(Icons.chevron_right),
               onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const AiPage())),
+            ),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.save_alt),
+              title: Text(tr.t('Daten sichern und übernehmen', 'Back up and restore')),
+              subtitle: Text(tr.t('Export und Import als Datei', 'Export and import as a file')),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const DataPage())),
             ),
             const Divider(),
             Text(tr.net, style: theme.textTheme.titleMedium),

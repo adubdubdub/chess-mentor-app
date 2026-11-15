@@ -43,7 +43,7 @@ chess-mentor-app/
 │   ├── ai/              KI-Texte: Anbieter, Prompts, Prüfung gegen Engine-Fakten, Zwischenspeicher, Schlüssel (Keystore)
 │   ├── puzzles/         Wiederholungsplan (Stufen, Wertung), Folgezug zweizügiger Puzzles, Erinnerungen
 │   ├── engine/          Stockfish auf dem Handy (kleines/großes Netz), Netz-Download, Analyse-Warteschlange
-│   ├── data/            Partien, Puzzles, Versuche und KI-Texte in SQLite, Einstellungen
+│   ├── data/            Partien, Puzzles, Versuche und KI-Texte in SQLite, Einstellungen, Export/Import (backup.dart)
 │   ├── ui/              Partienliste, Import, Partie- und Momentansicht, Gewinnchance-Tabelle, Engine-Seite, Texte DE/EN
 │   └── main.dart
 ├── test/                Unit-Tests und Vergleich mit dem Bot (fixtures: gemeinfreie Partien + Bot-Referenz)
@@ -51,6 +51,7 @@ chess-mentor-app/
 ├── android/             Android-Projekt, Speichergrenzen in gradle.properties, Signierung (Schlüssel außerhalb des Repos)
 ├── tools/
 │   ├── build-apk.sh     begrenzter APK-Build für den Heimserver
+│   ├── bot_export.py    Daten des Telegram-Bots in eine Exportdatei umwandeln (einmalig)
 │   └── make_golden.sh   Referenzanalyse mit dem Code des Telegram-Bots erzeugen
 └── LICENSE              GPL-3.0
 ```
@@ -106,6 +107,30 @@ Ein Text wird einmal erzeugt und gespeichert (Schlüssel enthält Art, Id, Sprac
 Android-Keystore (`flutter_secure_storage`), nicht in den Einstellungen und nicht im Backup (`allowBackup` aus).
 **Heimserver ist nur für das eigene Handy gedacht**, weil das Abo persönlich ist; andere Nutzer verwenden Textbausteine
 oder einen eigenen Schlüssel.
+
+## 💾 Export und Import
+
+Einstellungen → „Daten sichern und übernehmen“: alle Partien samt Lernstand als eine JSON-Datei (`schach-mentor-export`,
+Version 1; `lib/data/backup.dart`). Wegen des ausgeschalteten Android-Backups ist das der Weg auf ein neues Handy.
+Auch eine geteilte oder geöffnete Exportdatei wird erkannt.
+
+```mermaid
+flowchart LR
+    A["📱 App"] -- "Export" --> F["📄 JSON-Datei"]
+    F -- "Import" --> B["📱 neues Handy"]
+    T["🤖 Telegram-Bot<br/>mentor.db"] -- "tools/bot_export.py" --> F
+    F -. "ohne Analyse" .-> N["⚙️ Partie wird neu analysiert,<br/>danach Lernstand auf die Puzzles"]
+```
+
+| Inhalt je Partie | Bemerkung |
+|---|---|
+| PGN, Farbe, Datum | Schon vorhandene Partien (gleiche Zugfolge) bleiben unverändert |
+| Analyse | optional; ohne sie rechnet die App neu |
+| Puzzle-Lernstand | Stufe, Fälligkeit, Wiederholungen, Versuche, gespeicherte KI-Texte; Zuordnung über die Zugnummer (`ply`) |
+| KI-Texte der Besprechung | Texte ohne Versionsangabe gelten für die aktuelle Prompt-Version |
+
+Nicht enthalten: Schlüssel, Zugangsdaten und Einstellungen. Die Datei ist unverschlüsselt. `tools/bot_export.py` wandelt die
+Datenbank des Telegram-Bots einmalig um (nur lesend).
 
 ## 🧩 Puzzle-Wertung
 
@@ -183,7 +208,7 @@ adb install -r build/app/outputs/flutter-apk/app-release.apk
 - [x] **Schritt 1:** Aufräumen: App-ID `io.github.adubdubdub.schachmentor`, Signierschlüssel, kein `testOnly`, GitHub Actions
 - [x] **Schritt 2:** Puzzles: Versuche speichern ✅, Aufstieg nur im ersten Versuch ohne Tipp ✅, zweizügige Puzzles ✅ (Folgezug wird beim Lösen auf Eindeutigkeit geprüft, Abstand ≥ 15 Prozentpunkte)
 - [ ] **Schritt 3:** KI-Texte: Heimserver (Claude Code über das KI-Gateway) und eigener Schlüssel, mit Zugprüfung (Puzzle und Besprechung; offen: Test auf dem Handy, optional Anthropic direkt)
-- [ ] **Schritt 4:** Export/Import, Übernahme der Bot-Daten
+- [ ] **Schritt 4:** Export/Import und Übernahme der Bot-Daten (umgesetzt und per Unit-Tests geprüft; offen: Test auf dem Handy mit den echten Bot-Daten)
 - [ ] **Schritt 5:** Abruf per Benutzername (Lichess, Chess.com), mehrere Partien je PGN
 - [ ] **Schritt 6:** Schwächenprofil und Wochenfokus
 - [ ] **Schritt 7:** Erste Weitergabe an Familie und Freunde (GitHub Releases, Obtainium)
