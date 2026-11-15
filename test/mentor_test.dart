@@ -116,6 +116,16 @@ void main() {
       expect(p.candidates.map((t) => t.topic), [Topic.hangsPiece]);
     });
 
+    test('ein Thema nur aus einer einzigen Partie ist kein Muster', () {
+      final games = [
+        _game(0, 0, [for (var k = 0; k < 4; k++) _m(ply: 10 + 2 * k, motifs: ['hangs_material'])]),
+        for (var i = 1; i < 6; i++) _game(i, i, const []),
+      ];
+      final t = buildProfile(games).topics.single;
+      expect((t.count, t.games), (4, 1));
+      expect(t.enough, isFalse);
+    });
+
     test('Beherrschung der Puzzles senkt die Punktzahl', () {
       List<GameRecord> make(bool mastered) => [
         for (var i = 0; i < 6; i++)

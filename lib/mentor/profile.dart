@@ -16,6 +16,9 @@ const trendRecent = 5;
 const minGames = 5;
 const minOccurrences = 3;
 
+/// Ein Thema braucht außerdem Vorkommen in mindestens so vielen Partien, sonst ist es eher ein Ausreißer als ein Muster.
+const minTopicGames = 2;
+
 class TopicStat {
   const TopicStat({
     required this.topic,
@@ -189,12 +192,13 @@ Profile buildProfile(List<GameRecord> records, {int window = profileWindow, int 
       clean += p.clean;
     }
     final mastery = puzzles == 0 ? 0.0 : mastered / puzzles;
-    final enough = games.length >= minGames && count >= minOccurrences;
+    final topicGames = {for (final i in items) i.$2.id}.length;
+    final enough = games.length >= minGames && count >= minOccurrences && topicGames >= minTopicGames;
     topics.add(
       TopicStat(
         topic: entry.key,
         count: count,
-        games: {for (final i in items) i.$2.id}.length,
+        games: topicGames,
         per100: per100,
         avgDrop: avgDrop,
         trend: canTrend
