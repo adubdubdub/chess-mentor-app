@@ -4,9 +4,10 @@ Stockfish rechnet, du lernst: Android-App, die eigene Schachpartien auf dem Hand
 und als Puzzles mit Wiederholung einübt. Ohne eigenen Server und ohne Pflicht-Schlüssel. Entstanden aus einem privaten
 Telegram-Bot, den die App ab Ende 2026 ersetzt.
 
-> **Stand: Phase 3 (10.11.2026), nächster Schritt 3 der Roadmap.** Partien kommen per Teilen, Einfügen oder Datei in die App. Stockfish analysiert sie auf dem Handy
+> **Stand: Schritt 3 von 8 (15.11.2026), nächster Schritt 4: Export/Import.** Partien kommen per Teilen, Einfügen oder Datei in die App. Stockfish analysiert sie auf dem Handy
 > wie der Telegram-Bot: Genauigkeit, Fehler-Einstufung, Verlauf und Schlüsselmomente mit Pfeilen und Varianten.
 > Dazu kommen die sokratische Besprechung am Brett und Puzzles aus eigenen Fehlern mit Wiederholung und Erinnerung.
+> Texte kommen auf Wunsch von einer KI (eigener Heimserver oder eigener Schlüssel), immer gegen die Engine-Fakten geprüft.
 
 ## 🧭 Zielbild
 
@@ -26,10 +27,11 @@ Texte entstehen in drei Stufen, nur die erste ist Pflicht:
 | Stufe | Wie | Kosten |
 |---|---|---|
 | Textbausteine | aus Engine-Fakten und Motiven, offline | keine |
-| Heimserver | Claude Code auf dem eigenen Server, nur im Heimnetz (geplant) | eigenes Abo |
-| Eigener Schlüssel | App fragt den Anbieter des Nutzers direkt (geplant) | je nach Anbieter |
+| Heimserver | Claude Code auf dem eigenen Server über ein KI-Gateway (OpenAI-kompatibel), nur für das eigene Handy | eigenes Abo |
+| Eigener Schlüssel | App fragt den Anbieter des Nutzers direkt (OpenAI-kompatibel: OpenRouter, Gemini, Ollama, OpenAI) | je nach Anbieter |
 
 Jeder KI-Text wird gegen die Engine-Fakten geprüft. Nennt er einen Zug, der dort nicht steht, gelten die Textbausteine.
+Mehr dazu im Abschnitt [KI-Texte](#-ki-texte).
 
 ## 🗂️ Aufbau
 
@@ -38,13 +40,15 @@ chess-mentor-app/
 ├── lib/
 │   ├── analysis/        Port von analysis.py: Gewinnchance, Einstufung, Momente, Motive (reines Dart, testbar)
 │   ├── coach/           Texte des Mentors ohne Sprachmodell: Fragen, Tipps, Erklärungen, Lernpunkt
-│   ├── puzzles/         Wiederholungsplan und vorausgeplante Erinnerungen
+│   ├── ai/              KI-Texte: Anbieter, Prompts, Prüfung gegen Engine-Fakten, Zwischenspeicher, Schlüssel (Keystore)
+│   ├── puzzles/         Wiederholungsplan (Stufen, Wertung), Folgezug zweizügiger Puzzles, Erinnerungen
 │   ├── engine/          Stockfish auf dem Handy (kleines/großes Netz), Netz-Download, Analyse-Warteschlange
-│   ├── data/            Partien in SQLite, Einstellungen
+│   ├── data/            Partien, Puzzles, Versuche und KI-Texte in SQLite, Einstellungen
 │   ├── ui/              Partienliste, Import, Partie- und Momentansicht, Gewinnchance-Tabelle, Engine-Seite, Texte DE/EN
 │   └── main.dart
 ├── test/                Unit-Tests und Vergleich mit dem Bot (fixtures: gemeinfreie Partien + Bot-Referenz)
-├── android/             Android-Projekt, Speichergrenzen in gradle.properties
+├── .github/workflows/   CI: Analyse, Tests, Prüf-Build (Flutter-Version festgelegt)
+├── android/             Android-Projekt, Speichergrenzen in gradle.properties, Signierung (Schlüssel außerhalb des Repos)
 ├── tools/
 │   ├── build-apk.sh     begrenzter APK-Build für den Heimserver
 │   └── make_golden.sh   Referenzanalyse mit dem Code des Telegram-Bots erzeugen
@@ -71,6 +75,53 @@ und prüft jedes Feld. Ohne den Container wird er übersprungen.
 | klein (`light`) | in der App, ~1 MB | 0,73 s je Stellung |
 | groß (`nn-1a298aa575a0`) | Download 98,5 MB, SHA-256-Prüfung | 1,26 s je Stellung |
 
+## 🤖 KI-Texte
+
+Die Analyse läuft immer auf dem Handy. Die KI formuliert nur Texte aus den Engine-Fakten: Erklärung zum Puzzle sowie
+Frage, Tipp, Erklärung, Zusammenfassung und Lernpunkt der Besprechung. Es gibt **einen** Anbietertyp,
+OpenAI-kompatibel (Basis-URL, Modell, Schlüssel, optional Kopfzeilen für Cloudflare Access). Damit funktionieren das
+eigene KI-Gateway, OpenRouter, Gemini, Ollama und OpenAI gleich. Einstellung: Einstellungen → KI-Texte, mit
+Verbindungstest.
+
+```mermaid
+sequenceDiagram
+    participant U as 📱 App
+    participant K as 🗄️ Zwischenspeicher
+    participant A as ☁️ KI-Anbieter
+    U->>K: Text zu Partie oder Puzzle schon da?
+    K-->>U: ja, sofort anzeigen
+    U->>A: Prompt aus Engine-Fakten (lib/ai/prompts.dart)
+    A-->>U: Antwort (bei der Besprechung JSON)
+    U->>U: Prüfung je Feld (lib/ai/verify.dart)
+    U->>K: gültigen Text speichern
+    Note over U: Fehler, kein Netz oder Prüfung nicht bestanden: Textbausteine
+```
+
+Prüfung je Feld, jeweils mit Rückfall auf den Textbaustein nur für dieses Feld:
+- Jeder genannte Zug (nummeriert, mit Figurenbuchstabe oder Schlagzug) muss in den Fakten stehen.
+- Frage und Tipp dürfen den besten Zug nicht nennen, auch nicht sein Zielfeld.
+- Leere oder nicht lesbare Antworten werden verworfen.
+
+Ein Text wird einmal erzeugt und gespeichert (Schlüssel enthält Art, Id, Sprache und Prompt-Version). Zugangsdaten liegen im
+Android-Keystore (`flutter_secure_storage`), nicht in den Einstellungen und nicht im Backup (`allowBackup` aus).
+**Heimserver ist nur für das eigene Handy gedacht**, weil das Abo persönlich ist; andere Nutzer verwenden Textbausteine
+oder einen eigenen Schlüssel.
+
+## 🧩 Puzzle-Wertung
+
+Jeder Versuch wird gespeichert (Tabelle `puzzle_attempts`: Ausgang, falsche Züge, Tipp ja/nein).
+
+| Ausgang | Bedingung | Folge |
+|---|---|---|
+| Erster Versuch | bester oder gleichwertiger Zug (unter 5 Punkten schwächer), ohne Tipp | steigt eine Stufe auf (1 · 3 · 7 · 21 · 60 Tage) |
+| Zweiter Versuch | mit Tipp oder im zweiten Anlauf gelöst | bleibt auf der Stufe |
+| Lösung gezeigt | Lösung angefordert oder zweimal falsch | zurück auf morgen |
+
+Auch eine gute Alternative zählt als gelöst; die empfohlene Variante wird danach trotzdem gezeigt. **Zweizügige
+Puzzles:** Nach dem ersten richtigen Zug antwortet der Gegner, und der nächste eigene Zug wird gefragt, aber nur wenn er
+eindeutig ist (mindestens 15 Prozentpunkte besser als der zweitbeste, Prüfung beim Lösen mit Stockfish,
+`lib/puzzles/follow_up.dart`).
+
 ## 🧩 Puzzle-Auswertung
 
 Nach jedem Puzzle (gelöst oder Lösung gezeigt) erklärt die App, **warum** ein Zug gut oder schlecht war. Alle Zahlen
@@ -95,12 +146,19 @@ Brain-Notiz „Schach-Mentor – Bot und App abgleichen“.
 ```bash
 flutter pub get
 flutter analyze
-flutter test
+flutter test --exclude-tags engine   # schnelle Tests, laufen auch in der CI
+STOCKFISH_BIN=/pfad/zu/stockfish flutter test --tags engine   # Vergleich mit dem Bot, braucht Stockfish 17.1
 tools/build-apk.sh       # Release-APK: build/app/outputs/flutter-apk/app-release.apk
-adb install -r -t build/app/outputs/flutter-apk/app-release.apk   # -t: APK ist derzeit test-only
+adb install -r build/app/outputs/flutter-apk/app-release.apk
 ```
 
-Gebaut wird nur `arm64-v8a` (`android.injected.build.abi` in `android/gradle.properties`).
+- Gebaut wird nur `arm64-v8a` (`abiFilters` und `packaging` in `android/app/build.gradle.kts`).
+- **Signierung:** Die Release-APK wird mit einem Schlüssel außerhalb des Repos signiert (Pfad über
+  `SCHACHMENTOR_KEY_PROPERTIES` oder Standardpfad, siehe `build.gradle.kts`); ohne Schlüssel gilt der Debug-Schlüssel.
+  Schlüsseldateien stehen in `.gitignore`. **Verlust des Schlüssels bedeutet keine Updates mehr.**
+- **CI** (`.github/workflows/ci.yml`): Analyse und Tests bei jedem Push, dazu ein unsignierter Prüf-Build. Die
+  Flutter-Version ist festgelegt, weil neuere Versionen `package:flutter/material.dart` als veraltet melden.
+- Die Engine-Tests brauchen ein lokales Stockfish (`STOCKFISH_BIN`), sie laufen nur auf dem Heimserver.
 
 ## ⚠️ Stolpersteine
 
@@ -113,7 +171,8 @@ Gebaut wird nur `arm64-v8a` (`android.injected.build.abi` in `android/gradle.pro
 - Mehr Threads machen die Analyse bei fester Tiefe nicht schneller (Pixel 6, kleines Netz: 4 Threads 1,28 s, 1 Thread
   0,73 s; großes Netz: 3,35 s gegenüber 1,26 s).
 - Bei ausgeschaltetem Bildschirm pausiert Android die Engine; die App hält ihn während einer Analyse wach.
-- Die APK ist noch als `testOnly` markiert und braucht `adb install -t`. Vor der Veröffentlichung entfernen.
+- Die App-ID `io.github.adubdubdub.schachmentor` ist nach der ersten Weitergabe nicht mehr änderbar.
+- KI-Antworten sind nicht deterministisch: Ein Text kann bei einem Aufruf die Prüfung bestehen und beim nächsten nicht. Darum zählt immer der Rückfall.
 
 ## 🗺️ Roadmap
 
@@ -123,7 +182,7 @@ Gebaut wird nur `arm64-v8a` (`android.injected.build.abi` in `android/gradle.pro
 - [x] **Phase 3:** Puzzles mit Wiederholung (1 · 3 · 7 · 21 · 60 Tage), tägliche Erinnerung ohne Server, Auswertung mit Gewinnchance, Folge und Begründung
 - [x] **Schritt 1:** Aufräumen: App-ID `io.github.adubdubdub.schachmentor`, Signierschlüssel, kein `testOnly`, GitHub Actions
 - [x] **Schritt 2:** Puzzles: Versuche speichern ✅, Aufstieg nur im ersten Versuch ohne Tipp ✅, zweizügige Puzzles ✅ (Folgezug wird beim Lösen auf Eindeutigkeit geprüft, Abstand ≥ 15 Prozentpunkte)
-- [ ] **Schritt 3:** KI-Texte: Heimserver (Claude Code) und eigener Schlüssel, mit Zugprüfung (Puzzle und Besprechung umgesetzt; offen: Cloudflare-Hostname, Test mit echtem Anbieter)
+- [ ] **Schritt 3:** KI-Texte: Heimserver (Claude Code über das KI-Gateway) und eigener Schlüssel, mit Zugprüfung (Puzzle und Besprechung; offen: Test auf dem Handy, optional Anthropic direkt)
 - [ ] **Schritt 4:** Export/Import, Übernahme der Bot-Daten
 - [ ] **Schritt 5:** Abruf per Benutzername (Lichess, Chess.com), mehrere Partien je PGN
 - [ ] **Schritt 6:** Schwächenprofil und Wochenfokus
