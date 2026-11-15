@@ -2,6 +2,8 @@
 library;
 
 import '../ui/strings.dart';
+import 'level_texts_data.dart';
+import 'strength.dart';
 import 'topics.dart';
 
 extension TopicTexts on Tr {
@@ -79,4 +81,17 @@ extension TopicTexts on Tr {
     Topic.advantageLost => this.t('Was ist das sicherste Weiterspielen mit meinem Vorteil?', 'What is the safest way to continue with my advantage?'),
     Topic.whenWorse => this.t('Was ist der ruhigste Zug, der nichts verschlechtert?', 'What is the calmest move that makes nothing worse?'),
   };
+
+  /// Prüffrage passend zur Stufe (Elo-Anpassung); ohne Stufe die allgemeine [topicCheck].
+  String topicCheckFor(Topic t, Level? level) {
+    if (level == null) return topicCheck(t);
+    final x = levelTexts[t]![level.index];
+    return this.t(x.checkDe, x.checkEn);
+  }
+
+  /// Der stufenspezifische Schritt für das Info-Blatt.
+  String topicStepFor(Topic t, Level level) {
+    final x = levelTexts[t]![level.index];
+    return this.t(x.stepDe, x.stepEn);
+  }
 }

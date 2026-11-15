@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../mentor/focus.dart';
 import '../mentor/focus_keeper.dart';
 import '../mentor/profile.dart';
+import '../mentor/strength.dart';
 import '../mentor/topic_texts.dart';
 import 'ai_badge.dart';
 import 'strings.dart';
@@ -22,6 +23,7 @@ class FocusCard extends StatelessWidget {
     this.onCancel,
     this.onPractice,
     this.onReview,
+    this.level,
   });
 
   final FocusState state;
@@ -40,6 +42,9 @@ class FocusCard extends StatelessWidget {
 
   /// Rückblick auf den zuletzt beendeten Fokus.
   final void Function(FocusEntry focus)? onReview;
+
+  /// Stufe der Spielstärke für die Prüffrage (null = allgemein).
+  final Level? level;
 
   @override
   Widget build(BuildContext context) {
@@ -105,7 +110,7 @@ class FocusCard extends StatelessWidget {
         Text(tr.topicRule(f.topic)),
         _personal(context, tr, theme),
         const SizedBox(height: 8),
-        Text('❓ ${tr.t('Vor jedem Zug', 'Before every move')}: ${tr.topicCheck(f.topic)}', style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
+        Text('❓ ${tr.t('Vor jedem Zug', 'Before every move')}: ${tr.topicCheckFor(f.topic, level)}', style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
         const SizedBox(height: 12),
         Text(_goal(tr, f.target, f.goalGames, f.baselineCount, f.baselineGames)),
         const SizedBox(height: 8),

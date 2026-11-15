@@ -33,6 +33,8 @@ class AppScope extends InheritedWidget {
   final StrengthService strength;
   final SecretStore secrets;
 
+  static AppScope? maybeOf(BuildContext context) => context.dependOnInheritedWidgetOfExactType<AppScope>();
+
   static AppScope of(BuildContext context) => context.dependOnInheritedWidgetOfExactType<AppScope>()!;
 
   @override

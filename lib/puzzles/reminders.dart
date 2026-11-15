@@ -92,7 +92,7 @@ class Reminders {
     if (!monday.isAfter(now)) monday = monday.add(const Duration(days: 7));
     for (var i = 0; i < _weeks; i++) {
       final at = tz.TZDateTime(tz.local, monday.year, monday.month, monday.day + 7 * i, 9);
-      final notice = weeklyNotice(tr, active: active, at: at, hasSuggestion: hasSuggestion);
+      final notice = weeklyNotice(tr, active: active, at: at, hasSuggestion: hasSuggestion, level: settings.level);
       if (notice == null) continue;
       await _plugin.zonedSchedule(
         id: _weeklyFirstId + i,

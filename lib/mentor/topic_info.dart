@@ -2,6 +2,7 @@
 library;
 
 import '../ui/strings.dart';
+import 'strength.dart';
 import 'topic_texts.dart';
 import 'topics.dart';
 
@@ -19,14 +20,16 @@ class TopicInfo {
 }
 
 extension TopicInfoTexts on Tr {
-  TopicInfo topicInfo(Topic t) {
+  /// Mit [level] ersetzt ein stufenspezifischer Schritt den vierten allgemeinen, und die Prüffrage passt zur Stufe.
+  TopicInfo topicInfo(Topic t, {Level? level}) {
+    final check = topicCheckFor(t, level);
     final practice = this.t(
       'Löse die Fokus-Puzzles zu diesem Thema und achte bei jeder Auflösung auf die Antwort des Gegners. In deinen Partien '
-          'stellst du vor jedem Zug die Prüffrage: „${topicCheck(t)}“',
+          'stellst du vor jedem Zug die Prüffrage: „$check“',
       'Solve the focus puzzles on this topic and watch your opponent\'s reply in every solution. In your games, ask the '
-          'check question before every move: “${topicCheck(t)}”',
+          'check question before every move: “$check”',
     );
-    return switch (t) {
+    final base = switch (t) {
       Topic.hangsPiece => TopicInfo(
         what: this.t(
           'Du ziehst, und danach kann dein Gegner eine deiner Figuren gewinnen, weil sie ungedeckt steht oder von einer weniger wertvollen Figur angegriffen wird.',
@@ -231,5 +234,12 @@ extension TopicInfoTexts on Tr {
         practice: practice,
       ),
     };
+    if (level == null) return base;
+    return TopicInfo(
+      what: base.what,
+      why: base.why,
+      how: [...base.how.take(3), topicStepFor(t, level)],
+      practice: base.practice,
+    );
   }
 }

@@ -138,6 +138,7 @@ class _MentorPageState extends State<MentorPage> {
         await _load();
       },
       onReview: _openReview,
+      level: AppScope.of(context).settings.level,
       onPractice: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const PuzzlePage())).then((_) => _load()),
     );
   }

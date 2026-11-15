@@ -3,6 +3,7 @@ library;
 
 import '../ui/strings.dart';
 import 'focus.dart';
+import 'strength.dart';
 import 'topic_texts.dart';
 
 class FocusNotice {
@@ -14,11 +15,11 @@ class FocusNotice {
 
 /// Wochenanfang: Der Fokus läuft noch, ist am [at] schon abgelaufen, oder es gibt noch keinen.
 /// Null, wenn es nichts Sinnvolles zu sagen gibt (kein Fokus und kein Vorschlag möglich).
-FocusNotice? weeklyNotice(Tr tr, {FocusEntry? active, required DateTime at, required bool hasSuggestion}) {
+FocusNotice? weeklyNotice(Tr tr, {FocusEntry? active, required DateTime at, required bool hasSuggestion, Level? level}) {
   if (active != null && at.isBefore(active.endsAt)) {
     return FocusNotice(
       '🎯 ${tr.t('Wochenfokus', 'Weekly focus')}: ${tr.topicName(active.topic)}',
-      tr.topicCheck(active.topic),
+      tr.topicCheckFor(active.topic, level),
     );
   }
   if (!hasSuggestion) return null;

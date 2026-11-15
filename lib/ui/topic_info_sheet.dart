@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 
+import '../mentor/strength.dart';
 import '../mentor/topic_info.dart';
 import '../mentor/topic_texts.dart';
 import '../mentor/topics.dart';
+import 'app_scope.dart';
 import 'strings.dart';
 
 /// Ausführliche Erklärung zu einem Thema als aufziehbares Blatt: worum es geht, warum es passiert, wie es besser wird.
-Future<void> showTopicInfo(BuildContext context, Topic topic) => showModalBottomSheet<void>(
+Future<void> showTopicInfo(BuildContext context, Topic topic) {
+  final level = AppScope.maybeOf(context)?.settings.level;
+  return showModalBottomSheet<void>(
   context: context,
   isScrollControlled: true,
   showDragHandle: true,
@@ -15,21 +19,25 @@ Future<void> showTopicInfo(BuildContext context, Topic topic) => showModalBottom
     initialChildSize: 0.75,
     minChildSize: 0.4,
     maxChildSize: 0.95,
-    builder: (ctx, controller) => TopicInfoView(topic: topic, controller: controller),
+    builder: (ctx, controller) => TopicInfoView(topic: topic, controller: controller, level: level),
   ),
-);
+  );
+}
 
 class TopicInfoView extends StatelessWidget {
-  const TopicInfoView({super.key, required this.topic, this.controller});
+  const TopicInfoView({super.key, required this.topic, this.controller, this.level});
 
   final Topic topic;
+
+  /// Spielstärke-Stufe für den stufenspezifischen Schritt (null = allgemein).
+  final Level? level;
   final ScrollController? controller;
 
   @override
   Widget build(BuildContext context) {
     final tr = Tr.of(context);
     final theme = Theme.of(context);
-    final info = tr.topicInfo(topic);
+    final info = tr.topicInfo(topic, level: level);
     Widget heading(String text) => Padding(
       padding: const EdgeInsets.only(top: 18, bottom: 6),
       child: Text(text, style: theme.textTheme.titleSmall?.copyWith(color: theme.colorScheme.primary)),
