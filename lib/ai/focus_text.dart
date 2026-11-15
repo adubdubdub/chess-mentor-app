@@ -9,6 +9,7 @@ import '../mentor/focus.dart';
 import '../mentor/records.dart';
 import '../mentor/topic_texts.dart';
 import '../ui/strings.dart';
+import 'prompt_level.dart';
 import 'prompts.dart';
 import 'verify.dart';
 
@@ -30,7 +31,12 @@ class FocusFacts {
 }
 
 /// Fakten zum Fokusthema: Kennzahlen, Ziel und bis zu [focusExamples] Beispielzüge mit der größten Wirkung.
-FocusFacts focusFacts(FocusSuggestion s, List<({GameRecord game, Moment moment})> examples, {required bool de}) {
+FocusFacts focusFacts(
+  FocusSuggestion s,
+  List<({GameRecord game, Moment moment})> examples, {
+  required bool de,
+  String levelKey = '',
+}) {
   final tr = Tr(de);
   final ex = ([...examples]..sort((a, b) => b.moment.drop.compareTo(a.moment.drop))).take(focusExamples).toList();
   final stat = s.stat;
@@ -82,13 +88,13 @@ FocusFacts focusFacts(FocusSuggestion s, List<({GameRecord game, Moment moment})
     json: json,
     moveTexts: moveTexts,
     numbers: numbers,
-    cacheKey: 'focus:${stat.topic.name}:${stat.count}:${s.baselineGames}:${de ? 'de' : 'en'}:v$promptVersion',
+    cacheKey: 'focus:${stat.topic.name}:${stat.count}:${s.baselineGames}:${de ? 'de' : 'en'}:v$promptVersion$levelKey',
   );
 }
 
-String focusPrompt(FocusFacts f, {required bool de, String level = defaultLevel}) {
+String focusPrompt(FocusFacts f, {required bool de, PromptLevel level = const PromptLevel.fallback()}) {
   if (de) {
-    return '''Du bist ein geduldiger Schachtrainer. Dein Schüler ($level) hat für die kommende Woche ein Schwerpunktthema
+    return '''Du bist ein geduldiger Schachtrainer. Dein Schüler (${level.text}) hat für die kommende Woche ein Schwerpunktthema
 bekommen. Du bekommst die Fakten aus seinen eigenen Partien als JSON.
 
 Schreibe einen persönlichen Text in höchstens 5 einfachen Sätzen, mit "du":
@@ -100,10 +106,10 @@ Regeln: Nutze AUSSCHLIESSLICH Züge und Zahlen aus dem JSON, erfinde keine eigen
 Deutsche Notation (S, L, T, D, K) wie im JSON; "6...Lc6" ist ein Zug von Schwarz, "7.f4" von Weiß. Keine Aufzählung,
 keine Überschrift, kein Codeblock, nur Fließtext.
 
-Fakten:
+${styleLine(level, de: true)}Fakten:
 ${f.json}''';
   }
-  return '''You are a patient chess coach. Your student ($level) has been given a focus topic for the coming week.
+  return '''You are a patient chess coach. Your student (${level.text}) has been given a focus topic for the coming week.
 You get facts from their own games as JSON.
 
 Write a personal text in at most 5 simple sentences, addressing the student as "you":
@@ -114,7 +120,7 @@ Write a personal text in at most 5 simple sentences, addressing the student as "
 Rules: use ONLY moves and numbers from the JSON, never invent your own lines or other numbers. Standard English notation as
 in the JSON; "6...Bc6" is a Black move, "7.f4" a White move. No lists, no heading, no code block, plain prose only.
 
-Facts:
+${styleLine(level, de: false)}Facts:
 ${f.json}''';
 }
 

@@ -13,6 +13,7 @@ import '../mentor/focus.dart';
 import '../mentor/profile.dart';
 import '../mentor/records.dart';
 import 'focus_text.dart';
+import 'prompt_level.dart';
 import 'prompts.dart';
 import 'provider.dart';
 import 'review_texts.dart';
@@ -27,6 +28,10 @@ class MentorAi {
   final GameStore store;
 
   bool get enabled => settings.aiMode != AiMode.templates;
+
+  /// Spielstärke für den Prompt (Zahl nur, wenn der Nutzer das erlaubt).
+  PromptLevel _level(bool de) =>
+      promptLevel(level: settings.level, elo: settings.elo, sendElo: settings.strengthToAi, de: de);
 
   Future<AiProvider?> _provider() async {
     final mode = settings.aiMode;
@@ -49,13 +54,14 @@ class MentorAi {
 
   /// Erklärung zu einem Puzzle (Warum der Partiezug schwach war); null = Textbaustein verwenden.
   Future<String?> puzzleExplanation(StoredPuzzle p, {required bool de}) async {
-    final key = 'puzzle:${p.id}:${de ? 'de' : 'en'}:v$promptVersion';
+    final level = _level(de);
+    final key = 'puzzle:${p.id}:${de ? 'de' : 'en'}:v$promptVersion${level.keyPart}';
     final cached = await store.aiText(key);
     if (cached != null) return cached;
     final provider = await _provider();
     if (provider == null) return null;
     try {
-      final raw = await provider.complete(puzzlePrompt(p.moment, de: de));
+      final raw = await provider.complete(puzzlePrompt(p.moment, de: de, level: level));
       final text = raw.replaceAll(RegExp(r'^```\w*|```$'), '').trim();
       final bad = unknownMoves(text, moveTokens(factMoveTexts(p.moment, de: de)));
       if (text.isEmpty || bad.isNotEmpty) {
@@ -73,7 +79,8 @@ class MentorAi {
   /// KI-Texte für die Besprechung einer Partie; null = Textbausteine verwenden.
   /// Einzelne Felder, die die Prüfung nicht bestehen, bleiben null (dort gilt der Textbaustein).
   Future<ReviewTexts?> reviewTexts(int gameId, GameAnalysis a, {required bool de}) async {
-    final key = 'review:$gameId:${de ? 'de' : 'en'}:v$promptVersion';
+    final level = _level(de);
+    final key = 'review:$gameId:${de ? 'de' : 'en'}:v$promptVersion${level.keyPart}';
     final cached = await store.aiText(key);
     if (cached != null) {
       try {
@@ -83,7 +90,7 @@ class MentorAi {
     final provider = await _provider();
     if (provider == null) return null;
     try {
-      final texts = parseReview(await provider.complete(reviewPrompt(a, de: de)), a, de: de);
+      final texts = parseReview(await provider.complete(reviewPrompt(a, de: de, level: level)), a, de: de);
       if (texts == null) {
         debugPrint('KI-Besprechung verworfen (nichts Brauchbares)');
         return null;
@@ -99,13 +106,14 @@ class MentorAi {
   /// Persönlicher Text zum Fokusthema aus den Kennzahlen und eigenen Beispielzügen; null = kein KI-Text.
   Future<String?> focusText(FocusSuggestion s, List<GameRecord> records, {required bool de}) async {
     final examples = topicMoments(s.topic, records);
-    final facts = focusFacts(s, examples, de: de);
+    final level = _level(de);
+    final facts = focusFacts(s, examples, de: de, levelKey: level.keyPart);
     final cached = await store.aiText(facts.cacheKey);
     if (cached != null) return cached;
     final provider = await _provider();
     if (provider == null) return null;
     try {
-      final text = checkFocusText(await provider.complete(focusPrompt(facts, de: de)), facts);
+      final text = checkFocusText(await provider.complete(focusPrompt(facts, de: de, level: level)), facts);
       if (text == null) {
         debugPrint('KI-Fokustext verworfen (Prüfung nicht bestanden)');
         return null;

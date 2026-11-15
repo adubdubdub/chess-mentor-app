@@ -5,10 +5,11 @@ import 'dart:convert';
 
 import '../analysis/analysis.dart';
 import '../analysis/chess_utils.dart';
+import 'prompt_level.dart';
 
-const promptVersion = 2;
+const promptVersion = 3;
 
-const defaultLevel = 'ca. 1200 Elo, zwischen Einsteiger und Fortgeschritten';
+const defaultLevel = defaultLevelText;
 
 String _san(String s, bool de) => de ? germanSan(s) : s;
 
@@ -39,10 +40,10 @@ List<String> factMoveTexts(Moment m, {required bool de}) {
   ];
 }
 
-String puzzlePrompt(Moment m, {required bool de, String level = defaultLevel}) {
+String puzzlePrompt(Moment m, {required bool de, PromptLevel level = const PromptLevel.fallback()}) {
   final facts = const JsonEncoder.withIndent(' ').convert(puzzleFacts(m, de: de));
   if (de) {
-    return '''Du bist ein geduldiger Schachtrainer. Dein Schüler ($level) hat ein Puzzle aus einem eigenen Fehler gelöst
+    return '''Du bist ein geduldiger Schachtrainer. Dein Schüler (${level.text}) hat ein Puzzle aus einem eigenen Fehler gelöst
 oder nicht gelöst. Du bekommst die Fakten der Stockfish-Analyse als JSON.
 
 Regeln: Nutze AUSSCHLIESSLICH Züge, Varianten und Bewertungen aus dem JSON, erfinde keine eigenen Varianten.
@@ -52,10 +53,10 @@ Erkläre in höchstens 4 einfachen Sätzen, mit "du": warum der Partiezug schwac
 und warum der beste Zug besser ist. Nenne KEINE Prozentzahlen: Gewinnchancen und die Folgevariante stehen schon in einer Tabelle darüber, wiederhole sie nicht.
 Antworte nur mit dem Erklärtext, ohne Überschrift und ohne Codeblock.
 
-Fakten:
+${styleLine(level, de: true)}Fakten:
 $facts''';
   }
-  return '''You are a patient chess coach. Your student ($level) worked on a puzzle made from one of their own mistakes.
+  return '''You are a patient chess coach. Your student (${level.text}) worked on a puzzle made from one of their own mistakes.
 You get the facts of a Stockfish analysis as JSON.
 
 Rules: use ONLY moves, lines and evaluations from the JSON, never invent your own lines.
@@ -66,7 +67,7 @@ reply_line) and why the best move is better. Do NOT mention percentages: winning
 already shown in a table above, do not repeat them.
 Answer with the explanation text only, no heading and no code block.
 
-Facts:
+${styleLine(level, de: false)}Facts:
 $facts''';
 }
 
@@ -88,11 +89,11 @@ List<String> reviewMoveTexts(GameAnalysis a, {required bool de}) => [
   for (final m in a.moments) ...factMoveTexts(m, de: de),
 ];
 
-String reviewPrompt(GameAnalysis a, {required bool de, String level = defaultLevel}) {
+String reviewPrompt(GameAnalysis a, {required bool de, PromptLevel level = const PromptLevel.fallback()}) {
   final facts = const JsonEncoder.withIndent(' ').convert(reviewFacts(a, de: de));
   final color = de ? (a.color.name == 'white' ? 'Weiß' : 'Schwarz') : a.color.name;
   if (de) {
-    return '''Du bist ein geduldiger, sokratischer Schachtrainer. Dein Schüler spielt $level und hat gerade
+    return '''Du bist ein geduldiger, sokratischer Schachtrainer. Dein Schüler spielt ${level.text} und hat gerade
 eine Partie gespielt (er hatte $color). Du bekommst die Fakten einer Stockfish-Analyse als JSON.
 
 Regeln:
@@ -121,10 +122,10 @@ Regeln:
 Antworte nur mit JSON in genau dieser Form, ohne Codeblock:
 {"zusammenfassung": "...", "lernpunkt": "...", "momente": [{"ply": 0, "frage": "...", "tipp": "...", "erklaerung": "..."}]}
 
-Fakten:
+${styleLine(level, de: true)}Fakten:
 $facts''';
   }
-  return '''You are a patient, Socratic chess coach. Your student plays at $level and just played a game
+  return '''You are a patient, Socratic chess coach. Your student plays at ${level.text} and just played a game
 (they had $color). You get the facts of a Stockfish analysis as JSON.
 
 Rules:
@@ -150,6 +151,6 @@ Rules:
 Answer with JSON only, in exactly this form, no code block (keep the German key names):
 {"zusammenfassung": "...", "lernpunkt": "...", "momente": [{"ply": 0, "frage": "...", "tipp": "...", "erklaerung": "..."}]}
 
-Facts:
+${styleLine(level, de: false)}Facts:
 $facts''';
 }
