@@ -1,5 +1,5 @@
-// Vergleich des Dart-Ports mit analysis.py des Telegram-Bots: dieselbe Engine (Stockfish 17.1 im Container
-// chess-mentor), dieselbe Tiefe, Referenz aus tools/make_golden.sh. Ohne Docker-Container wird übersprungen.
+// Vergleich des Dart-Ports mit analysis.py des (eingestellten) Telegram-Bots: dieselbe Engine (Stockfish 17.1),
+// dieselbe Tiefe, Referenzen aus test/fixtures/*.golden.json. Ohne lokales Stockfish wird übersprungen.
 @Tags(['engine'])
 library;
 

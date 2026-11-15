@@ -5,18 +5,12 @@ import 'dart:io';
 import 'package:chess_mentor/analysis/line_engine.dart';
 
 /// Befehl für Stockfish in Tests: Umgebungsvariable STOCKFISH_BIN (lokales Binary),
-/// sonst /root/dev/stockfish/stockfish, sonst (nur bis zum Bot-Abbau) der Bot-Container.
+/// sonst /root/dev/stockfish/stockfish.
 List<String>? engineCommand() {
   final env = Platform.environment['STOCKFISH_BIN'];
   for (final path in [if (env != null && env.isNotEmpty) env, '/root/dev/stockfish/stockfish']) {
     if (File(path).existsSync()) return [path];
   }
-  try {
-    final running = Process.runSync('docker', ['inspect', '-f', '{{.State.Running}}', 'chess-mentor']);
-    if (running.stdout.toString().trim() == 'true') {
-      return const ['docker', 'exec', '-i', 'chess-mentor', '/usr/games/stockfish'];
-    }
-  } catch (_) {}
   return null;
 }
 

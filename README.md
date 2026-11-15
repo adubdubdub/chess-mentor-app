@@ -65,7 +65,6 @@ chess-mentor-app/
 ├── tools/
 │   ├── build-apk.sh     begrenzter APK-Build für den Heimserver
 │   ├── bot_export.py    Daten des Telegram-Bots in eine Exportdatei umwandeln (einmalig)
-│   └── make_golden.sh   Referenzanalyse mit dem Code des Telegram-Bots erzeugen
 └── LICENSE              GPL-3.0
 ```
 
@@ -81,8 +80,9 @@ flowchart LR
     A -.-> T
 ```
 
-Der Vergleichstest rechnet dieselben Partien mit derselben Engine wie der Bot (Stockfish im Container `chess-mentor`)
-und prüft jedes Feld. Ohne den Container wird er übersprungen.
+Der Vergleichstest rechnet dieselben Partien mit derselben Engine wie der Bot (Stockfish 17.1, lokales Binary über
+`STOCKFISH_BIN`) und prüft jedes Feld gegen die gespeicherten Referenzanalysen des Bots (`test/fixtures/*.golden.json`).
+Der Bot ist eingestellt, die Referenzen bleiben als feste Vergleichswerte. Ohne Stockfish wird der Test übersprungen.
 
 | Netz | Herkunft | Pixel 6, Tiefe 16, 1 Thread |
 |---|---|---|
