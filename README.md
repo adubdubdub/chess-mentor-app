@@ -250,7 +250,7 @@ adb install -r build/app/outputs/flutter-apk/app-release.apk
 - [ ] **Schritt 3:** KI-Texte: Heimserver (Claude Code über das KI-Gateway) und eigener Schlüssel, mit Zugprüfung (Puzzle und Besprechung; offen: Test auf dem Handy, optional Anthropic direkt)
 - [ ] **Schritt 4:** Export/Import und Übernahme der Bot-Daten (umgesetzt und per Unit-Tests geprüft; offen: Test auf dem Handy mit den echten Bot-Daten)
 - [ ] **Schritt 5:** Abruf per Benutzername (Lichess, Chess.com), mehrere Partien je PGN (umgesetzt und per Unit-Tests und Live-Abruf geprüft; offen: Test auf dem Handy)
-- [ ] **Schritt 6:** Schwächenprofil und Wochenfokus
+- [ ] **Schritt 6:** Mentor-Kern: Schwächenprofil über die letzten 20 Partien (Themen aus Motiven, Phase, „Vorteil verspielt“, Eröffnung, Puzzle-Stand) und Wochenfokus mit Vorschlag und Wahl, Puzzles zum Fokusthema zuerst; Etappen 6a Themen und Tests, 6b Profilseite, 6c Wochenfokus, 6d KI-Text und Benachrichtigung, 6e Wochenrückblick
 - [ ] **Schritt 7:** Erste Weitergabe an Familie und Freunde (GitHub Releases, Obtainium)
 - [ ] **Schritt 8:** F-Droid: Übersetzungsdateien, Barrierefreiheit, Datenschutzhinweis
 
